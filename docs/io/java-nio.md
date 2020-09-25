@@ -1,10 +1,33 @@
 # Java NIO
 
 > **📦 本文以及示例源码已归档在 [javacore](https://github.com/dunwu/javacore/)**
+>
+> 关键词：`Channel`、`Buffer`、`Selector`、`非阻塞`、`多路复用`
 
-新的输入/输出 (NIO) 库是在 JDK 1.4 中引入的，弥补了原来的 I/O 的不足，提供了高速的、面向块的 I/O。
+<!-- TOC depthFrom:2 depthTo:3 -->
 
-## NIO 简介
+- [一、NIO 简介](#一nio-简介)
+  - [NIO 和 BIO 的区别](#nio-和-bio-的区别)
+  - [NIO 的基本流程](#nio-的基本流程)
+  - [NIO 核心组件](#nio-核心组件)
+- [二、Channel(通道)](#二channel通道)
+- [三、Buffer(缓冲区)](#三buffer缓冲区)
+  - [缓冲区状态变量](#缓冲区状态变量)
+  - [文件 NIO 示例](#文件-nio-示例)
+- [四、Selector(选择器)](#四selector选择器)
+  - [创建选择器](#创建选择器)
+  - [将通道注册到选择器上](#将通道注册到选择器上)
+  - [监听事件](#监听事件)
+  - [获取到达的事件](#获取到达的事件)
+  - [事件循环](#事件循环)
+  - [套接字 NIO 示例](#套接字-nio-示例)
+  - [内存映射文件](#内存映射文件)
+- [五、NIO vs. BIO](#五nio-vs-bio)
+- [参考资料](#参考资料)
+
+<!-- /TOC -->
+
+## 一、NIO 简介
 
 NIO 是一种同步非阻塞的 I/O 模型，在 Java 1.4 中引入了 NIO 框架，对应 `java.nio` 包，提供了 `Channel` 、`Selector`、`Buffer` 等抽象。
 
@@ -42,8 +65,6 @@ NIO 有选择器，而 IO 没有。
 
 选择器用于使用单个线程处理多个通道。因此，它需要较少的线程来处理这些通道。线程之间的切换对于操作系统来说是昂贵的。 因此，为了提高系统效率选择器是有用的。
 
-[![一个单线程中Selector维护3个Channel的示意图](https://camo.githubusercontent.com/3a68153ce17be90275df07a47409afaea91aff83/68747470733a2f2f6d792d626c6f672d746f2d7573652e6f73732d636e2d6265696a696e672e616c6979756e63732e636f6d2f323031392d322f536c6563746f722e706e67)](https://camo.githubusercontent.com/3a68153ce17be90275df07a47409afaea91aff83/68747470733a2f2f6d792d626c6f672d746f2d7573652e6f73732d636e2d6265696a696e672e616c6979756e63732e636f6d2f323031392d322f536c6563746f722e706e67)
-
 ### NIO 的基本流程
 
 通常来说 NIO 中的所有 IO 都是从 Channel（通道） 开始的。
@@ -55,11 +76,11 @@ NIO 有选择器，而 IO 没有。
 
 NIO 包含下面几个核心的组件：
 
-- Channel(通道)
-- Buffer(缓冲区)
-- Selector(选择器)
+- **Channel(通道)**
+- **Buffer(缓冲区)**
+- **Selector(选择器)**
 
-## 通道
+## 二、Channel(通道)
 
 通道（`Channel`）是对 BIO 中的流的模拟，可以通过它读写数据。
 
@@ -75,35 +96,29 @@ NIO 包含下面几个核心的组件：
 - `SocketChannel`：通过 TCP 读写网络中数据；
 - `ServerSocketChannel`：可以监听新进来的 TCP 连接，对每一个新进来的连接都会创建一个 SocketChannel。
 
-## 缓冲区
+## 三、Buffer(缓冲区)
 
-**发送给一个通道（`Channel`）的所有数据都必须首先放到缓冲区中，同样地，从通道中读取的任何数据都要先读到缓冲区中**。也就是说，不会直接对通道进行读写数据，而是要先经过缓冲区。
-
-缓冲区实质上是一个数组，但它不仅仅是一个数组。缓冲区提供了对数据的结构化访问，而且还可以跟踪系统的读/写进程。
-
-BIO 与 NIO 最重要的区别是数据打包和传输的方式：**BIO 以流的方式处理数据，而 NIO 以块的方式处理数据**。
-
-**面向流的 BIO 一次处理一个字节数据**：一个输入流产生一个字节数据，一个输出流消费一个字节数据。为流式数据创建过滤器非常容易，链接几个过滤器，以便每个过滤器只负责复杂处理机制的一部分。不利的一面是，面向流的 I/O 通常相当慢。
-
-**面向块的 NIO 一次处理一个数据块**，按块处理数据比按流处理数据要快得多。但是面向块的 NIO 缺少一些面向流的 BIO 所具有的优雅性和简单性。
+**向 `Channel` 读写的数据都必须先置于缓冲区中**。也就是说，不会直接对通道进行读写数据，而是要先经过缓冲区。缓冲区实质上是一个数组，但它不仅仅是一个数组。缓冲区提供了对数据的结构化访问，而且还可以跟踪系统的读/写进程。
 
 BIO 和 NIO 已经很好地集成了，`java.io.*` 已经以 NIO 为基础重新实现了，所以现在它可以利用 NIO 的一些特性。例如，`java.io.*` 包中的一些类包含以块的形式读写数据的方法，这使得即使在面向流的系统中，处理速度也会更快。
 
 缓冲区包括以下类型：
 
-- ByteBuffer
-- CharBuffer
-- ShortBuffer
-- IntBuffer
-- LongBuffer
-- FloatBuffer
-- DoubleBuffer
+- `ByteBuffer`
+- `CharBuffer`
+- `ShortBuffer`
+- `IntBuffer`
+- `LongBuffer`
+- `FloatBuffer`
+- `DoubleBuffer`
 
 ### 缓冲区状态变量
 
 - `capacity`：最大容量；
 - `position`：当前已经读写的字节数；
 - `limit`：还可以读写的字节数。
+- `mark`：记录上一次 postion 的位置，默认是 0，算是一个便利性的考虑，往往不是必须
+  的。
 
 缓冲区状态变量的改变过程举例：
 
@@ -157,15 +172,16 @@ public static void fastCopy(String src, String dist) throws IOException {
 }
 ```
 
-## 选择器
+## 四、Selector(选择器)
 
 NIO 常常被叫做非阻塞 IO，主要是因为 NIO 在网络通信中的非阻塞特性被广泛使用。
 
-**NIO 实现了 IO 多路复用中的 Reactor 模型**：一个线程（`Thread`）使用一个选择器 `Selector` 通过轮询的方式去监听多个通道 `Channel` 上的事件，从而让一个线程就可以处理多个事件。
+**NIO 实现了 IO 多路复用中的 Reactor 模型**：
 
-通过配置监听的通道 `Channel` 为非阻塞，那么当 `Channel` 上的 IO 事件还未到达时，就不会进入阻塞状态一直等待，而是继续轮询其它 `Channel`，找到 IO 事件已经到达的 `Channel` 执行。
+- 一个线程（`Thread`）使用一个**选择器 `Selector` 通过轮询的方式去监听多个通道 `Channel` 上的事件**，从而让一个线程就可以处理多个事件。
+- 通过**配置监听的通道 `Channel` 为非阻塞**，那么当 `Channel` 上的 IO 事件还未到达时，就不会进入阻塞状态一直等待，而是继续轮询其它 `Channel`，找到 IO 事件已经到达的 `Channel` 执行。
 
-因为创建和切换线程的开销很大，因此使用一个线程来处理多个事件而不是一个线程处理一个事件具有更好的性能。
+- 因为创建和切换线程的开销很大，因此使用**一个线程来处理多个事件**而不是一个线程处理一个事件具有更好的性能。
 
 需要注意的是，只有 `SocketChannel` 才能配置为非阻塞，而 `FileChannel` 不能，因为 `FileChannel` 配置非阻塞也没有意义。
 
@@ -352,6 +368,21 @@ public class NIOClient {
 ```java
 MappedByteBuffer mbb = fc.map(FileChannel.MapMode.READ_WRITE, 0, 1024);
 ```
+
+## 五、NIO vs. BIO
+
+BIO 与 NIO 最重要的区别是数据打包和传输的方式：**BIO 以流的方式处理数据，而 NIO 以块的方式处理数据**。
+
+- **面向流的 BIO 一次处理一个字节数据**：一个输入流产生一个字节数据，一个输出流消费一个字节数据。为流式数据创建过滤器非常容易，链接几个过滤器，以便每个过滤器只负责复杂处理机制的一部分。不利的一面是，面向流的 I/O 通常相当慢。
+- **面向块的 NIO 一次处理一个数据块**，按块处理数据比按流处理数据要快得多。但是面向块的 NIO 缺少一些面向流的 BIO 所具有的优雅性和简单性。
+
+BIO 模式：
+
+![img](http://dunwu.test.upcdn.net/snap/20200630212345.png)
+
+NIO 模式：
+
+![img](http://dunwu.test.upcdn.net/snap/20200630212248.png)
 
 ## 参考资料
 

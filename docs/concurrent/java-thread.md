@@ -1,6 +1,30 @@
 # Java 线程基础
 
 > **📦 本文以及示例源码已归档在 [javacore](https://github.com/dunwu/javacore/)**
+>
+> **_关键词：`Thread`、`Runnable`、`Callable`、`Future`、`wait`、`notify`、`notifyAll`、`join`、`sleep`、`yeild`、`线程状态`、`线程通信`_**
+
+<!-- TOC depthFrom:2 depthTo:3 -->
+
+- [一、线程简介](#一线程简介)
+  - [什么是进程](#什么是进程)
+  - [什么是线程](#什么是线程)
+  - [进程和线程的区别](#进程和线程的区别)
+- [二、线程基本用法](#二线程基本用法)
+  - [创建线程](#创建线程)
+  - [线程休眠](#线程休眠)
+  - [线程礼让](#线程礼让)
+  - [终止线程](#终止线程)
+  - [守护线程](#守护线程)
+- [三、线程通信](#三线程通信)
+  - [wait/notify/notifyAll](#waitnotifynotifyall)
+  - [join](#join)
+  - [管道](#管道)
+- [四、线程状态](#四线程状态)
+- [FAQ](#faq)
+- [参考资料](#参考资料)
+
+<!-- /TOC -->
 
 ## 一、线程简介
 
@@ -48,7 +72,7 @@
 - 实现 `Runnable` 接口
 - 实现 `Callable` 接口
 
-#### 继承 Thread 类
+#### Thread
 
 通过继承 `Thread` 类创建线程的步骤：
 
@@ -89,7 +113,7 @@ public class ThreadDemo {
 }
 ```
 
-#### 实现 Runnable 接口
+#### Runnable
 
 **实现 `Runnable` 接口优于继承 `Thread` 类**，因为：
 
@@ -131,11 +155,74 @@ public class RunnableDemo {
 }
 ```
 
-#### 实现 Callable 接口
+#### Callable、Future、FutureTask
 
-> **继承 Thread 类和实现 Runnable 接口这两种创建线程的方式都没有返回值**。所以，线程执行完后，无法得到执行结果。但如果期望得到执行结果该怎么做？
->
-> 为了解决这个问题，**Java 1.5 后，提供了 `Callable` 接口和 `Future` 接口，通过它们，可以在线程执行结束后，返回执行结果**。
+**继承 Thread 类和实现 Runnable 接口这两种创建线程的方式都没有返回值**。所以，线程执行完后，无法得到执行结果。但如果期望得到执行结果该怎么做？
+
+为了解决这个问题，Java 1.5 后，提供了 `Callable` 接口和 `Future` 接口，通过它们，可以在线程执行结束后，返回执行结果。
+
+##### Callable
+
+Callable 接口只声明了一个方法，这个方法叫做 call()：
+
+```java
+public interface Callable<V> {
+    /**
+     * Computes a result, or throws an exception if unable to do so.
+     *
+     * @return computed result
+     * @throws Exception if unable to compute a result
+     */
+    V call() throws Exception;
+}
+```
+
+那么怎么使用 Callable 呢？一般情况下是配合 ExecutorService 来使用的，在 ExecutorService 接口中声明了若干个 submit 方法的重载版本：
+
+```java
+<T> Future<T> submit(Callable<T> task);
+<T> Future<T> submit(Runnable task, T result);
+Future<?> submit(Runnable task);
+```
+
+第一个 submit 方法里面的参数类型就是 Callable。
+
+##### Future
+
+Future 就是对于具体的 Callable 任务的执行结果进行取消、查询是否完成、获取结果。必要时可以通过 get 方法获取执行结果，该方法会阻塞直到任务返回结果。
+
+```java
+public interface Future<V> {
+    boolean cancel(boolean mayInterruptIfRunning);
+    boolean isCancelled();
+    boolean isDone();
+    V get() throws InterruptedException, ExecutionException;
+    V get(long timeout, TimeUnit unit)
+        throws InterruptedException, ExecutionException, TimeoutException;
+}
+```
+
+##### FutureTask
+
+FutureTask 类实现了 RunnableFuture 接口，RunnableFuture 继承了 Runnable 接口和 Future 接口。
+
+所以，FutureTask 既可以作为 Runnable 被线程执行，又可以作为 Future 得到 Callable 的返回值。
+
+```java
+public class FutureTask<V> implements RunnableFuture<V> {
+    // ...
+    public FutureTask(Callable<V> callable) {}
+    public FutureTask(Runnable runnable, V result) {}
+}
+
+public interface RunnableFuture<V> extends Runnable, Future<V> {
+    void run();
+}
+```
+
+事实上，FutureTask 是 Future 接口的一个唯一实现类。
+
+##### Callable + Future + FutureTask 示例
 
 通过实现 `Callable` 接口创建线程的步骤：
 
@@ -397,7 +484,7 @@ public class ThreadStopDemo3 {
 
 什么是守护线程？
 
-- 守护线程（Daemon Thread）是在后台执行并且不会阻止 JVM 终止的线程。当所有非守护线程结束时，程序也就终止，同时会杀死所有守护线程。
+- **守护线程（Daemon Thread）是在后台执行并且不会阻止 JVM 终止的线程**。**当所有非守护线程结束时，程序也就终止，同时会杀死所有守护线程**。
 - 与守护线程（Daemon Thread）相反的，叫用户线程（User Thread），也就是非守护线程。
 
 为什么需要守护线程？
@@ -408,7 +495,7 @@ public class ThreadStopDemo3 {
 
 - 可以使用 `isDaemon` 方法判断线程是否为守护线程。
 - 可以使用 `setDaemon` 方法设置线程为守护线程。
-  - 正在运行的用户线程无法设置为守护线程，所以 `setDaemon` 必须在 `thread.start` 方法之前设置，否则会抛出 `llegalThreadStateException` 异常；
+  - 正在运行的用户线程无法设置为守护线程，所以 \*\* \*\*，否则会抛出 `llegalThreadStateException` 异常；
   - 一个守护线程创建的子线程依然是守护线程。
   - 不要认为所有的应用都可以分配给守护线程来进行服务，比如读写操作或者计算逻辑。
 
@@ -436,35 +523,7 @@ public class ThreadDaemonDemo {
 
 > 参考阅读：[Java 中守护线程的总结](https://blog.csdn.net/shimiso/article/details/8964414)
 
-### FAQ
-
-#### sleep、yield、join 方法有什么区别
-
-- `yield` 方法
-  - `yield` 方法会 **让线程从 `Running` 状态转入 `Runnable` 状态**。
-  - 当调用了 `yield` 方法后，只有**与当前线程相同或更高优先级的`Runnable` 状态线程才会获得执行的机会**。
-- `sleep` 方法
-  - `sleep` 方法会 **让线程从 `Running` 状态转入 `Waiting` 状态**。
-  - `sleep` 方法需要指定等待的时间，**超过等待时间后，JVM 会将线程从 `Waiting` 状态转入 `Runnable` 状态**。
-  - 当调用了 `sleep` 方法后，**无论什么优先级的线程都可以得到执行机会**。
-  - `sleep` 方法不会释放“锁标志”，也就是说如果有 `synchronized` 同步块，其他线程仍然不能访问共享数据。
-- `join`
-  - `join` 方法会 **让线程从 `Running` 状态转入 `Waiting` 状态**。
-  - 当调用了 `join` 方法后，**当前线程必须等待调用 `join` 方法的线程结束后才能继续执行**。
-
-#### 为什么 sleep 和 yield 方法是静态的
-
-`Thread` 类的 `sleep` 和 `yield` 方法将处理 `Running` 状态的线程。
-
-所以在其他处于非 `Running` 状态的线程上执行这两个方法是没有意义的。这就是为什么这些方法是静态的。它们可以在当前正在执行的线程中工作，并避免程序员错误的认为可以在其他非运行线程调用这些方法。
-
-#### Java 线程是否按照线程优先级严格执行
-
-即使设置了线程的优先级，也**无法保证高优先级的线程一定先执行**。
-
-原因在于线程优先级依赖于操作系统的支持，然而，不同的操作系统支持的线程优先级并不相同，不能很好的和 Java 中线程优先级一一对应。
-
-## 三、线程间通信
+## 三、线程通信
 
 > 当多个线程可以一起工作去解决某个问题时，如果某些部分必须在其它部分之前完成，那么就需要对线程进行协调。
 
@@ -669,7 +728,7 @@ public class Piped {
 
 - **新建（New）** - 尚未调用 `start` 方法的线程处于此状态。此状态意味着：**创建的线程尚未启动**。
 
-- **可运行（Runnable）** - 已经调用了 `start` 方法的线程处于此状态。此状态意味着：**线程已经在 JVM 中运行**。但是在操作系统层面，它可能处于运行状态，也可能等待资源调度（例如处理器资源），资源调度完成就进入运行状态。所以该状态的可运行是指可以被运行，具体有没有运行要看底层操作系统的资源调度。
+- **就绪（Runnable）** - 已经调用了 `start` 方法的线程处于此状态。此状态意味着：**线程已经在 JVM 中运行**。但是在操作系统层面，它可能处于运行状态，也可能等待资源调度（例如处理器资源），资源调度完成就进入运行状态。所以该状态的可运行是指可以被运行，具体有没有运行要看底层操作系统的资源调度。
 
 - **阻塞（Blocked）** - 请求获取 monitor lock 从而进入 `synchronized` 函数或者代码块，但是其它线程已经占用了该 monitor lock，所以处于阻塞状态。要结束该状态进入 `Runnable`，从而需要其他线程释放 monitor lock。此状态意味着：**线程处于被阻塞状态**。
 
@@ -692,6 +751,34 @@ public class Piped {
   | `LockSupport.parkUntil` 方法             | `LockSupport.unpark`                            |
 
 - **终止(Terminated)** - 线程 `run` 方法执行结束，或者因异常退出了 `run` 方法。此状态意味着：线程结束了生命周期。
+
+## FAQ
+
+#### sleep、yield、join 方法有什么区别
+
+- `yield` 方法
+  - `yield` 方法会 **让线程从 `Running` 状态转入 `Runnable` 状态**。
+  - 当调用了 `yield` 方法后，只有**与当前线程相同或更高优先级的`Runnable` 状态线程才会获得执行的机会**。
+- `sleep` 方法
+  - `sleep` 方法会 **让线程从 `Running` 状态转入 `Waiting` 状态**。
+  - `sleep` 方法需要指定等待的时间，**超过等待时间后，JVM 会将线程从 `Waiting` 状态转入 `Runnable` 状态**。
+  - 当调用了 `sleep` 方法后，**无论什么优先级的线程都可以得到执行机会**。
+  - `sleep` 方法不会释放“锁标志”，也就是说如果有 `synchronized` 同步块，其他线程仍然不能访问共享数据。
+- `join`
+  - `join` 方法会 **让线程从 `Running` 状态转入 `Waiting` 状态**。
+  - 当调用了 `join` 方法后，**当前线程必须等待调用 `join` 方法的线程结束后才能继续执行**。
+
+#### 为什么 sleep 和 yield 方法是静态的
+
+`Thread` 类的 `sleep` 和 `yield` 方法将处理 `Running` 状态的线程。
+
+所以在其他处于非 `Running` 状态的线程上执行这两个方法是没有意义的。这就是为什么这些方法是静态的。它们可以在当前正在执行的线程中工作，并避免程序员错误的认为可以在其他非运行线程调用这些方法。
+
+#### Java 线程是否按照线程优先级严格执行
+
+即使设置了线程的优先级，也**无法保证高优先级的线程一定先执行**。
+
+原因在于线程优先级依赖于操作系统的支持，然而，不同的操作系统支持的线程优先级并不相同，不能很好的和 Java 中线程优先级一一对应。
 
 ## 参考资料
 

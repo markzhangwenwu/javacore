@@ -4,6 +4,21 @@ Java 之所以可以“一次编译，到处运行”，一是因为 JVM 针对�
 
 **.class 文件是一组以 8 位字节为基础单位的二进制流**，各个数据项严格按照顺序紧凑地排列在 .class 文件中，中间没有添加任何分隔符。**整个 .class 文件本质上就是一张表**。
 
+<!-- TOC depthFrom:2 depthTo:3 -->
+
+- [字节码](#字节码)
+  - [什么是字节码](#什么是字节码)
+  - [字节码结构](#字节码结构)
+  - [字节码操作集合](#字节码操作集合)
+  - [操作数栈和字节码](#操作数栈和字节码)
+  - [字节码工具](#字节码工具)
+- [字节码增强](#字节码增强)
+  - [Asm](#asm)
+  - [Javassist](#javassist)
+- [参考资料](#参考资料)
+
+<!-- /TOC -->
+
 ## 字节码
 
 ### 什么是字节码
@@ -74,7 +89,7 @@ Java 之所以可以“一次编译，到处运行”，一是因为 JVM 针对�
 
 JVM 规范规定了如下图 9 的访问标志（Access_Flag）。需要注意的是，JVM 并没有穷举所有的访问标志，而是使用按位或操作来进行描述的，比如某个类的修饰符为 Public Final，则对应的访问修饰符的值为 ACC_PUBLIC | ACC_FINAL，即 0x0001 | 0x0010=0x0011。
 
-![img](http://dunwu.test.upcdn.net/snap/1561473228816.png!zp)
+![img](http://dunwu.test.upcdn.net/snap/1561473228816.png)
 **（5）当前类名**
 
 访问标志后的 2 个字节，描述的是当前类的全限定名。这两个字节保存的值为常量池中的索引值，根据索引值就能在常量池中找到这个类的全限定名。
@@ -171,6 +186,6 @@ Asm Tree API 可以类比解析 XML 文件中的 DOM 方式，把整个类的结
 
 - [《深入理解 Java 虚拟机》](https://item.jd.com/11252778.html)
 - [一文让你明白 Java 字节码](https://www.jianshu.com/p/252f381a6bc4)
-- [Java字节码增强探秘](https://juejin.im/post/5d773ae1518825058772843c)
+- [Java 字节码增强探秘](https://juejin.im/post/5d773ae1518825058772843c)
 - [Asm 4.0 官方文档](https://asm.ow2.io/asm4-guide.pdf)
 - [Javassist Github](https://github.com/jboss-javassist/javassist)

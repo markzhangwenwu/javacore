@@ -9,7 +9,10 @@ import java.lang.reflect.Field;
  * <p>
  * 错误现象：java.lang.OutOfMemoryError
  * <p>
- * VM Args：-Xmx20M -XX:MaxDirectMemorySize=10M
+ * VM Args：-verbose:gc -Xmx20M -XX:MaxDirectMemorySize=10M
+ * <p>
+ * Linux Test Cli: nohup java -verbose:gc -Xmx20M -XX:MaxDirectMemorySize=10M -classpath "target/javacore-jvm-1.0.1.jar:target/lib/*"
+ * io.github.dunwu.javacore.jvm.memory.DirectOutOfMemoryDemo >> output.log 2>&1 &
  *
  * @author <a href="mailto:forbreak@163.com">Zhang Peng</a>
  * @since 2019-06-25

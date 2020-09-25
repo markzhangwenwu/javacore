@@ -4,7 +4,34 @@
 
 > 程序计数器、虚拟机栈和本地方法栈这三个区域属于线程私有的，只存在于线程的生命周期内，线程结束之后也会消失，因此不需要对这三个区域进行垃圾回收。**垃圾回收主要是针对 Java 堆和方法区进行**。
 
-## 对象死了吗
+<!-- TOC depthFrom:2 depthTo:3 -->
+
+- [一、对象活着吗](#一对象活着吗)
+  - [引用计数算法](#引用计数算法)
+  - [可达性分析算法](#可达性分析算法)
+  - [引用类型](#引用类型)
+  - [方法区的回收](#方法区的回收)
+  - [finalize()](#finalize)
+- [二、垃圾收集算法](#二垃圾收集算法)
+  - [垃圾收集性能](#垃圾收集性能)
+  - [标记 - 清除（Mark-Sweep）](#标记---清除mark-sweep)
+  - [标记 - 整理（Mark-Compact）](#标记---整理mark-compact)
+  - [复制（Copying）](#复制copying)
+  - [分代收集](#分代收集)
+- [三、垃圾收集器](#三垃圾收集器)
+  - [串行收集器](#串行收集器)
+  - [并行收集器](#并行收集器)
+  - [并发标记清除收集器](#并发标记清除收集器)
+  - [G1 收集器](#g1-收集器)
+  - [总结](#总结)
+- [四、内存分配与回收策略](#四内存分配与回收策略)
+  - [Minor GC](#minor-gc)
+  - [Full GC](#full-gc)
+- [参考资料](#参考资料)
+
+<!-- /TOC -->
+
+## 一、对象活着吗
 
 ### 引用计数算法
 
@@ -29,19 +56,18 @@ public class ReferenceCountingGC {
 
 ### 可达性分析算法
 
-通过 GC Roots 作为起始点进行搜索，能够到达到的对象都是存活的，不可达的对象可被回收。
+通过 **GC Roots** 作为起始点进行搜索，JVM 将能够到达到的对象视为**存活**，不可达的对象视为**死亡**。
 
 <div align="center">
 <img src="http://dunwu.test.upcdn.net/cs/java/javacore/jvm/jvm-gc-root.png" />
 <p>可达性分析算法</p>
 </div>
-
-Java 虚拟机使用该算法来判断对象是否可被回收，在 Java 中 GC Roots 一般包含以下内容：
+**可作为 GC Roots 的对象**包括下面几种：
 
 - 虚拟机栈中引用的对象
-- 本地方法栈中引用的对象
-- 方法区中类静态属性引用的对象
-- 方法区中的常量引用的对象
+- 本地方法栈中引用的对象（Native 方法）
+- 方法区中，类静态属性引用的对象
+- 方法区中，常量引用的对象
 
 ### 引用类型
 
@@ -83,13 +109,13 @@ WeakReference<Object> wf = new WeakReference<Object>(obj);
 obj = null;
 ```
 
-WeakHashMap 的 Entry 继承自 WeakReference，主要用来实现缓存。
+`WeakHashMap` 的 `Entry` 继承自 `WeakReference`，主要用来实现缓存。
 
 ```java
 private static class Entry<K,V> extends WeakReference<Object> implements Map.Entry<K,V>
 ```
 
-Tomcat 中的 ConcurrentCache 就使用了 WeakHashMap 来实现缓存功能。ConcurrentCache 采取的是分代缓存，经常使用的对象放入 eden 中，而不常用的对象放入 longterm。eden 使用 ConcurrentHashMap 实现，longterm 使用 WeakHashMap，保证了不常使用的对象容易被回收。
+Tomcat 中的 `ConcurrentCache` 就使用了 `WeakHashMap` 来实现缓存功能。`ConcurrentCache` 采取的是分代缓存，经常使用的对象放入 eden 中，而不常用的对象放入 longterm。eden 使用 `ConcurrentHashMap` 实现，longterm 使用 `WeakHashMap`，保证了不常使用的对象容易被回收。
 
 ```java
 public final class ConcurrentCache<K, V> {
@@ -154,7 +180,7 @@ obj = null;
 
 可以通过 `-Xnoclassgc` 参数来控制是否对类进行卸载。
 
-在大量使用反射、动态代理、CGLib 等 ByteCode 框架、动态生成 JSP 以及 OSGi 这类频繁自定义 `ClassLoader` 的场景都需要虚拟机具备类卸载功能，以保证不会出现内存溢出。
+在大量使用反射、动态代理、CGLib 等字节码框架、动态生成 JSP 以及 OSGi 这类频繁自定义 `ClassLoader` 的场景都需要虚拟机具备类卸载功能，以保证不会出现内存溢出。
 
 ### finalize()
 
@@ -162,7 +188,7 @@ obj = null;
 
 当一个对象可被回收时，如果需要执行该对象的 `finalize()` 方法，那么就有可能通过在该方法中让对象重新被引用，从而实现自救。
 
-## 垃圾收集算法
+## 二、垃圾收集算法
 
 ### 垃圾收集性能
 
@@ -171,7 +197,7 @@ obj = null;
 - **停顿时间** - 停顿时间是因为 GC 而导致程序不能工作的时间长度。
 - **吞吐量** - 吞吐量关注在特定的时间周期内一个应用的工作量的最大值。对关注吞吐量的应用来说长暂停时间是可以接受的。由于高吞吐量的应用关注的基准在更长周期时间上，所以快速响应时间不在考虑之内。
 
-### 标记 - 清除
+### 标记 - 清除（Mark-Sweep）
 
 <div align="center">
 <img src="http://dunwu.test.upcdn.net/cs/java/javacore/jvm/jvm-gc-mark-sweep.jpg" />
@@ -184,7 +210,7 @@ obj = null;
 - 标记和清除过程效率都不高；
 - 会产生大量不连续的内存碎片，导致无法给大对象分配内存。
 
-### 标记 - 整理
+### 标记 - 整理（Mark-Compact）
 
 <div align="center">
 <img src="http://dunwu.test.upcdn.net/cs/java/javacore/jvm/jvm-gc-mark-compact.jpg" />
@@ -192,7 +218,7 @@ obj = null;
 
 让所有存活的对象都向一端移动，然后直接清理掉端边界以外的内存。
 
-### 复制
+### 复制（Copying）
 
 <div align="center">
 <img src="http://dunwu.test.upcdn.net/cs/java/javacore/jvm/jvm-gc-copying.jpg" />
@@ -210,10 +236,45 @@ obj = null;
 
 一般将 Java 堆分为年轻代和老年代。
 
-- 年轻代使用：复制算法
-- 老年代使用：标记 - 清理 或者 标记 - 整理 算法
+- 年轻代使用：**复制** 算法
+- 老年代使用：**标记 - 清理** 或者 **标记 - 整理** 算法
 
-## 垃圾收集器
+<div align="center">
+<img src="http://dunwu.test.upcdn.net/cs/java/javacore/jvm/jvm-hotspot-heap-structure.png" />
+</div>
+
+#### 新生代
+
+新生代是大部分对象创建和销毁的区域，在通常的 Java 应用中，绝大部分对象生命周期都是很短暂的。其内部又分为 `Eden` 区域，作为对象初始分配的区域；两个 `Survivor`，有时候也叫 `from`、`to` 区域，被用来放置从 Minor GC 中保留下来的对象。
+
+JVM 会随意选取一个 `Survivor` 区域作为`to`，然后会在 GC 过程中进行区域间拷贝，也就是将 Eden 中存活下来的对象和 `from` 区域的对象，拷贝到这个`to`区域。这种设计主要是为了防止内存的碎片化，并进一步清理无用对象。
+
+#### 老年代
+
+放置长生命周期的对象，通常都是从 `Survivor` 区域拷贝过来的对象。当然，也有特殊情况，如果对象较大，JVM 会试图直接分配在 `Eden` 其他位置上；如果对象太大，完全无法在新生代找到足够长的连续空闲空间，JVM 就会直接分配到老年代。
+
+#### 永久代
+
+这部分就是早期 Hotspot JVM 的方法区实现方式了，储存 Java 类元数据、常量池、Intern 字符串缓存。在 JDK 8 之后就不存在永久代这块儿了。
+
+#### JVM 参数
+
+这里顺便提一下，JVM 允许对堆空间大小、各代空间大小进行设置，以调整 JVM GC。
+
+| 配置                | 描述                                                                                                               |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `-Xss`              | 虚拟机栈大小。                                                                                                     |
+| `-Xms`              | 堆空间初始值。                                                                                                     |
+| `-Xmx`              | 堆空间最大值。                                                                                                     |
+| `-Xmn`              | 新生代空间大小。                                                                                                   |
+| `-XX:NewSize`       | 新生代空间初始值。                                                                                                 |
+| `-XX:MaxNewSize`    | 新生代空间最大值。                                                                                                 |
+| `-XX:NewRatio`      | 新生代与年老代的比例。默认为 2，意味着老年代是新生代的 2 倍。                                                      |
+| `-XX:SurvivorRatio` | 新生代中调整 eden 区与 survivor 区的比例，默认为 8。即 `eden` 区为 80% 的大小，两个 `survivor` 分别为 10% 的大小。 |
+| `-XX:PermSize`      | 永久代空间的初始值。                                                                                               |
+| `-XX:MaxPermSize`   | 永久代空间的最大值。                                                                                               |
+
+## 三、垃圾收集器
 
 <div align="center">
 <img src="http://dunwu.test.upcdn.net/cs/java/javacore/jvm/jvm-gc-overview.jpg" />
@@ -225,11 +286,11 @@ obj = null;
 
 ### 串行收集器
 
-串行收集器是最基本、发展历史最悠久的收集器。
+串行收集器（Serial）是最基本、发展历史最悠久的收集器。
 
 串行收集器是 **`client` 模式下的默认收集器配置**。因为在客户端模式下，分配给虚拟机管理的内存一般来说不会很大。Serial 收集器收集几十兆甚至一两百兆的年轻代停顿时间可以控制在一百多毫秒以内，只要不是太频繁，这点停顿是可以接受的。
 
-串行收集器采用单线程 **stop-the-world** 的方式进行收集。当内存不足时，串行 GC 设置停顿标识，待所有线程都进入安全点（Safepoint）时，应用线程暂停，串行 GC 开始工作，**采用单线程方式回收空间并整理内存**。
+**串行收集器采用单线程 stop-the-world 的方式进行收集**。当内存不足时，串行 GC 设置停顿标识，待所有线程都进入安全点（Safepoint）时，应用线程暂停，串行 GC 开始工作，**采用单线程方式回收空间并整理内存**。
 
 <div align="center">
 <img src="http://dunwu.test.upcdn.net/cs/java/javacore/jvm/jvm-gc-serial.jpg" />
@@ -242,7 +303,7 @@ obj = null;
 
 > 开启选项：`-XX:+SerialGC`
 >
-> 打开此开关后，使用 Serial + Serial Old 收集器组合来进行内存回收。
+> 打开此开关后，使用 **Serial** + **Serial Old** 收集器组合来进行内存回收。
 
 #### Serial Old 收集器
 
@@ -255,11 +316,11 @@ Serial Old 是 Serial 收集器的老年代版本，也是给 Client 模式下�
 
 > 开启选项：`-XX:+UseParallelGC`
 >
-> 打开此开关后，使用 Parallel Scavenge + Serial Old 收集器组合来进行内存回收。
+> 打开此开关后，使用 **Parallel Scavenge** + **Serial Old** 收集器组合来进行内存回收。
 >
 > 开启选项：`-XX:+UseParallelOldGC`
 >
-> 打开此开关后，使用 Parallel Scavenge + Parallel Old 收集器组合来进行内存回收。
+> 打开此开关后，使用 **Parallel Scavenge** + **Parallel Old** 收集器组合来进行内存回收。
 
 其他收集器都是以关注停顿时间为目标，而**并行收集器是以关注吞吐量（Throughput）为目标的垃圾收集器**。
 
@@ -300,7 +361,7 @@ Parallel Scavenge 收集器还提供了一个参数 `-XX:+UseAdaptiveSizePolicy`
 
 > 开启选项：`-XX:+UseConcMarkSweepGC`
 >
-> 打开此开关后，使用 CMS + ParNew + Serial Old 收集器组合来进行内存回收。
+> 打开此开关后，使用 **CMS** + **ParNew** + **Serial Old** 收集器组合来进行内存回收。
 
 并发标记清除收集器是以获取最短停顿时间为目标。
 
@@ -412,27 +473,17 @@ ParNew 收集器默认开启的线程数量与 CPU 数量相同，可以使用 -
 
 ### G1 收集器
 
-> 参考资料：
->
-> - [G1 垃圾收集器入门](https://blog.csdn.net/zhanggang807/article/details/45956325)
-> - [详解 JVM Garbage First(G1) 垃圾收集器](https://blog.csdn.net/coderlius/article/details/79272773)
-> - [Getting Started with the G1 Garbage Collector](https://www.oracle.com/webfolder/technetwork/tutorials/obe/java/G1GettingStarted/index.html)
+> 开启选项：`-XX:+UseG1GC`
 
-G1（Garbage-First），是面向服务器应用的垃圾回收器。
+前面提到的垃圾收集器一般策略是关注吞吐量或停顿时间。而 ***G1 是一种兼顾吞吐量和停顿时间的 GC 收集器***。G1 是 Oracle JDK9 以后的默认 GC 收集器。G1 可以直观的设定停顿时间的目标，相比于 CMS GC，G1 未必能做到 CMS 在最好情况下的延时停顿，但是最差情况要好很多。
 
-G1 也是关注最短停顿时间的垃圾回收器。G1 也同样适合大尺寸堆内存的垃圾收集，官方推荐使用 G1 来代替 CMS。
-
-G1 最大的特点是引入分区的思路，弱化了分代的概念，合理利用垃圾收集各个周期的资源，解决了其他收集器甚至 CMS 的众多缺陷。Java 堆被分为年轻代、老年代和永久代，其它收集器进行收集的范围都是整个年轻代或者老生代，而 G1 可以直接对年轻代和永久代一起回收。
+G1 最大的特点是引入分区的思路，弱化了分代的概念，合理利用垃圾收集各个周期的资源，解决了其他收集器甚至 CMS 的众多缺陷。
 
 #### 分代和分区
 
-旧的垃圾收集器（串行的：serial，并行的：parallel，并发标记清除：CMS）都把堆结构化为三个部分：年轻代、年老代和固定大小的永久代。
+旧的垃圾收集器一般采取分代收集，Java 堆被分为年轻代、老年代和永久代。收集的范围都是整个年轻代或者整个老年代。
 
-<div align="center">
-<img src="http://dunwu.test.upcdn.net/cs/java/javacore/jvm/jvm-hotspot-heap-structure.png" />
-</div>
-
-G1 把年轻代和老年代划分成多个大小相等的独立区域（Region），年轻代和永久代不再物理隔离。
+G1 取消了永久代，并把年轻代和老年代划分成多个大小相等的独立区域（Region），年轻代和老年代不再物理隔离。G1 可以直接对年轻代和老年代一起回收。
 
 <div align="center">
 <img src="http://dunwu.test.upcdn.net/cs/java/javacore/jvm/jvm-gc-g1-heap-allocation.png" />
@@ -552,16 +603,30 @@ G1 选择活性最低的区域，这些区域能够以最快的速度回收。�
 |        **CMS**        |  并行 + 并发   |     老年代      |      标记-清除       | 响应速度优先 | 集中在互联网站或 B/S 系统服务端上的 Java 应用 |
 |        **G1**         |  并行 + 并发   | 年轻代 + 老年代 | 标记-整理 + 复制算法 | 响应速度优先 |         面向服务端应用，将来替换 CMS          |
 
-## 内存分配与回收策略
+## 四、内存分配与回收策略
 
 对象的内存分配，也就是在堆上分配。主要分配在年轻代的 Eden 区上，少数情况下也可能直接分配在老年代中。
 
-### Minor GC 和 Full GC
+### Minor GC
 
-- Minor GC：发生在年轻代上，因为年轻代对象存活时间很短，因此 Minor GC 会频繁执行，执行的速度一般也会比较快。
-- Full GC：发生在老年代上，老年代对象和年轻代的相反，其存活时间长，因此 Full GC 很少执行，而且执行速度会比 Minor GC 慢很多。
+**当 `Eden` 区空间不足时，触发 Minor GC**。
 
-### 内存分配策略
+**Minor GC 发生在年轻代上**，因为年轻代对象存活时间很短，因此 Minor GC 会频繁执行，执行的速度一般也会比较快。
+
+Minor GC 工作流程：
+
+1. Java 应用不断创建对象，通常都是分配在 `Eden` 区域，当其空间不足时（达到设定的阈值），触发 minor GC。仍然被引用的对象（绿色方块）存活下来，被复制到 JVM 选择的 Survivor 区域，而没有被引用的对象（黄色方块）则被回收。
+
+2. 经过一次 Minor GC，Eden 就会空闲下来，直到再次达到 Minor GC 触发条件。这时候，另外一个 Survivor 区域则会成为 `To` 区域，Eden 区域的存活对象和 `From` 区域对象，都会被复制到 `To` 区域，并且存活的年龄计数会被加 1。
+
+3. 类似第二步的过程会发生很多次，直到有对象年龄计数达到阈值，这时候就会发生所谓的晋升（Promotion）过程，如下图所示，超过阈值的对象会被晋升到老年代。这个阈值是可以通过 `-XX:MaxTenuringThreshold` 参数指定。
+
+
+### Full GC
+
+**Full GC 发生在老年代上**，老年代对象和年轻代的相反，其存活时间长，因此 Full GC 很少执行，而且执行速度会比 Minor GC 慢很多。
+
+#### 内存分配策略
 
 **（一）对象优先在 Eden 分配**
 
@@ -579,42 +644,44 @@ G1 选择活性最低的区域，这些区域能够以最快的速度回收。�
 
 为对象定义年龄计数器，对象在 Eden 出生并经过 Minor GC 依然存活，将移动到 Survivor 中，年龄就增加 1 岁，增加到一定年龄则移动到老年代中。
 
--XX:MaxTenuringThreshold 用来定义年龄的阈值。
+`-XX:MaxTenuringThreshold` 用来定义年龄的阈值。
 
 **（四）动态对象年龄判定**
 
-虚拟机并不是永远地要求对象的年龄必须达到 MaxTenuringThreshold 才能晋升老年代，如果在 Survivor 区中相同年龄所有对象大小的总和大于 Survivor 空间的一半，则年龄大于或等于该年龄的对象可以直接进入老年代，无需等到 MaxTenuringThreshold 中要求的年龄。
+虚拟机并不是永远地要求对象的年龄必须达到 `MaxTenuringThreshold` 才能晋升老年代，如果在 Survivor 区中相同年龄所有对象大小的总和大于 Survivor 空间的一半，则年龄大于或等于该年龄的对象可以直接进入老年代，无需等到 `MaxTenuringThreshold` 中要求的年龄。
 
 **（五）空间分配担保**
 
-在发生 Minor GC 之前，虚拟机先检查老年代最大可用的连续空间是否大于年轻代所有对象总空间，如果条件成立的话，那么 Minor GC 可以确认是安全的；如果不成立的话虚拟机会查看 HandlePromotionFailure 设置值是否允许担保失败，如果允许那么就会继续检查老年代最大可用的连续空间是否大于历次晋升到老年代对象的平均大小，如果大于，将尝试着进行一次 Minor GC，尽管这次 Minor GC 是有风险的；如果小于，或者 HandlePromotionFailure 设置不允许冒险，那这时也要改为进行一次 Full GC。
+在发生 Minor GC 之前，虚拟机先检查老年代最大可用的连续空间是否大于年轻代所有对象总空间，如果条件成立的话，那么 Minor GC 可以确认是安全的；如果不成立的话虚拟机会查看 `HandlePromotionFailure` 设置值是否允许担保失败，如果允许那么就会继续检查老年代最大可用的连续空间是否大于历次晋升到老年代对象的平均大小，如果大于，将尝试着进行一次 Minor GC，尽管这次 Minor GC 是有风险的；如果小于，或者 `HandlePromotionFailure` 设置不允许冒险，那这时也要改为进行一次 Full GC。
 
-### Full GC 的触发条件
+#### Full GC 的触发条件
 
 对于 Minor GC，其触发条件非常简单，当 Eden 区空间满时，就将触发一次 Minor GC。而 Full GC 则相对复杂，有以下条件：
 
-**（1）调用 System.gc()**
+**（1）调用 `System.gc()`**
 
-此方法的调用是建议虚拟机进行 Full GC，虽然只是建议而非一定，但很多情况下它会触发 Full GC，从而增加 Full GC 的频率，也即增加了间歇性停顿的次数。因此强烈建议能不使用此方法就不要使用，让虚拟机自己去管理它的内存。可通过 -XX:DisableExplicitGC 来禁止 RMI 调用 System.gc()。
+此方法的调用是建议虚拟机进行 Full GC，虽然只是建议而非一定，但很多情况下它会触发 Full GC，从而增加 Full GC 的频率，也即增加了间歇性停顿的次数。因此强烈建议能不使用此方法就不要使用，让虚拟机自己去管理它的内存。可通过 `-XX:DisableExplicitGC` 来禁止 RMI 调用 `System.gc()`。
 
 **（2）老年代空间不足**
 
-老年代空间不足的常见场景为前文所讲的大对象直接进入老年代、长期存活的对象进入老年代等，当执行 Full GC 后空间仍然不足，则抛出 Java.lang.OutOfMemoryError。为避免以上原因引起的 Full GC，调优时应尽量做到让对象在 Minor GC 阶段被回收、让对象在年轻代多存活一段时间以及不要创建过大的对象及数组。
+老年代空间不足的常见场景为前文所讲的大对象直接进入老年代、长期存活的对象进入老年代等，当执行 Full GC 后空间仍然不足，则抛出 `java.lang.OutOfMemoryError: Java heap space`。为避免以上原因引起的 Full GC，调优时应尽量做到让对象在 Minor GC 阶段被回收、让对象在年轻代多存活一段时间以及不要创建过大的对象及数组。
 
-**（3）空间分配担保失败**
+**（3）方法区空间不足**
 
-使用复制算法的 Minor GC 需要老年代的内存空间作担保，如果出现了 HandlePromotionFailure 担保失败，则会触发 Full GC。
+JVM 规范中运行时数据区域中的**方法区**，在 HotSpot 虚拟机中又被习惯称为**永久代**，永久代中存放的是类的描述信息、常量、静态变量等数据，当系统中要加载的类、反射的类和调用的方法较多时，永久代可能会被占满，在未配置为采用 CMS GC 的情况下也会执行 Full GC。如果经过 Full GC 仍然回收不了，那么 JVM 会抛出 `java.lang.OutOfMemoryError: PermGen space` 错误。为避免永久代占满造成 Full GC 现象，可采用的方法为增大 Perm Gen 空间或转为使用 CMS GC。
 
-**（4）JDK 1.7 及以前的永久代空间不足**
+**（4）Minor GC 的平均晋升空间大小大于老年代可用空间**
 
-在 JDK 1.7 及以前，HotSpot 虚拟机中的方法区是用永久代实现的，永久代中存放的为一些 Class 的信息、常量、静态变量等数据，当系统中要加载的类、反射的类和调用的方法较多时，永久代可能会被占满，在未配置为采用 CMS GC 的情况下也会执行 Full GC。如果经过 Full GC 仍然回收不了，那么虚拟机会抛出 java.lang.OutOfMemoryError，为避免以上原因引起的 Full GC，可采用的方法为增大永久代空间或转为使用 CMS GC。
+如果发现统计数据说之前 Minor GC 的平均晋升大小比目前老年代剩余的空间大，则不会触发 Minor GC 而是转为触发 Full GC。
 
-**（五）Concurrent Mode Failure**
+**（5）对象大小大于 To 区和老年代的可用内存**
 
-执行 CMS GC 的过程中同时有对象要放入老年代，而此时老年代空间不足（有时候“空间不足”是 CMS GC 时当前的浮动垃圾过多导致暂时性的空间不足触发 Full GC），便会报 Concurrent Mode Failure 错误，并触发 Full GC。
+由 `Eden` 区、`From` 区向 `To` 区复制时，对象大小大于 To 区可用内存，则把该对象转存到老年代，且老年代的可用内存小于该对象大小。
 
 ## 参考资料
 
 - [《深入理解 Java 虚拟机》](https://item.jd.com/11252778.html)
 - [从表到里学习 JVM 实现](https://www.douban.com/doulist/2545443/)
 - [详解 JVM Garbage First(G1) 垃圾收集器](https://blog.csdn.net/coderlius/article/details/79272773)
+- [G1 垃圾收集器入门](https://blog.csdn.net/zhanggang807/article/details/45956325)
+- [Getting Started with the G1 Garbage Collector](https://www.oracle.com/webfolder/technetwork/tutorials/obe/java/G1GettingStarted/index.html)

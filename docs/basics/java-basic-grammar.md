@@ -2,6 +2,24 @@
 
 > **📦 本文以及示例源码已归档在 [javacore](https://github.com/dunwu/javacore/)**
 
+<!-- TOC depthFrom:2 depthTo:3 -->
+
+- [注释](#注释)
+- [基本数据类型](#基本数据类型)
+- [变量](#变量)
+- [数组](#数组)
+- [枚举](#枚举)
+- [操作符](#操作符)
+- [方法](#方法)
+- [控制语句](#控制语句)
+- [异常](#异常)
+- [泛型](#泛型)
+- [反射](#反射)
+- [注解](#注解)
+- [序列化](#序列化)
+
+<!-- /TOC -->
+
 ## 注释
 
 空白行，或者注释的内容，都会被 Java 编译器忽略掉。
@@ -26,7 +44,7 @@ public class HelloWorld {
 
 ## 基本数据类型
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java基本数据类型.svg!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java基本数据类型.svg)
 
 > 👉 扩展阅读：[深入理解 Java 基本数据类型](https://github.com/dunwu/javacore/blob/master/docs/basics/深入理解Java基本数据类型.md)
 
@@ -63,13 +81,13 @@ Java 支持的变量类型有：
 
 ## 数组
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java数组.svg!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java数组.svg)
 
 > 👉 扩展阅读：[深入理解 Java 数组](https://github.com/dunwu/javacore/blob/master/docs/basics/Java数组.md)
 
 ## 枚举
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java枚举.svg!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java枚举.svg)
 
 > 👉 扩展阅读：[深入理解 Java 数组](https://github.com/dunwu/javacore/blob/master/docs/basics/Java枚举.md)
 
@@ -77,58 +95,60 @@ Java 支持的变量类型有：
 
 Java 中支持的操作符类型如下：
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java操作符.svg!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java操作符.svg)
 
 > 👉 扩展阅读：[Java 操作符](http://www.runoob.com/java/java-operators.html)
 
 ## 方法
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java方法.svg!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java方法.svg)
 
 > 👉 扩展阅读：[深入理解 Java 方法](https://github.com/dunwu/javacore/blob/master/docs/basics/Java方法.md)
 
 ## 控制语句
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java控制语句.svg!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java控制语句.svg)
 
 > 👉 扩展阅读：[Java 控制语句](https://github.com/dunwu/javacore/blob/master/docs/basics/Java控制语句.md)
 
 ## 异常
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java异常框架.svg!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java异常框架.svg)
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java异常.svg!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java异常.svg)
 
 > 👉 扩展阅读：[深入理解 Java 异常](https://github.com/dunwu/javacore/blob/master/docs/basics/Java异常.md)
 
 ## 泛型
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java泛型.svg!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java泛型.svg)
 
 > 👉 扩展阅读：[深入理解 Java 泛型](https://github.com/dunwu/javacore/blob/master/docs/basics/Java泛型.md)
 
 ## 反射
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java反射.svg!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java反射.svg)
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java代理.svg!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java代理.svg)
 
 > 👉 扩展阅读：[深入理解 Java 反射和动态代理](https://github.com/dunwu/javacore/blob/master/docs/basics/Java反射.md)
 
 ## 注解
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/注解简介.svg!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/注解简介.svg)
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/元注解.svg!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/元注解.svg)
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/内置注解.svg!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/内置注解.svg)
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/自定义注解.svg!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/自定义注解.svg)
 
 > 👉 扩展阅读：[深入理解 Java 注解](https://github.com/dunwu/javacore/blob/master/docs/basics/Java注解.md)
 
 ## 序列化
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java序列化.svg!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/xmind/Java序列化.svg)
 
 > 👉 扩展阅读：[深入理解 Java 序列化](https://github.com/dunwu/javacore/blob/master/docs/io/Java序列化.md)
+
+## 参考资料

@@ -4,13 +4,25 @@
 >
 > JDK 的 `java.util.concurrent` 包（即 J.U.C）中提供了几个非常有用的并发工具类。
 
+<!-- TOC depthFrom:2 depthTo:3 -->
+
+- [一、CountDownLatch](#一countdownlatch)
+- [二、CyclicBarrier](#二cyclicbarrier)
+- [三、Semaphore](#三semaphore)
+- [四、总结](#四总结)
+- [参考资料](#参考资料)
+
+<!-- /TOC -->
+
 ## 一、CountDownLatch
 
-> 字面意思为 **递减计数锁**。用于控制一个或者多个线程等待多个线程。
+> 字面意思为 **递减计数锁**。用于**控制一个线程等待多个线程**。
 >
 > `CountDownLatch` 维护一个计数器 count，表示需要等待的事件数量。`countDown` 方法递减计数器，表示有一个事件已经发生。调用 `await` 方法的线程会一直阻塞直到计数器为零，或者等待中的线程中断，或者等待超时。
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/CountDownLatch.png!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/CountDownLatch.png)
+
+`CountDownLatch` 是基于 AQS(`AbstractQueuedSynchronizer`) 实现的。
 
 `CountDownLatch` 唯一的构造方法：
 
@@ -19,9 +31,9 @@
 public CountDownLatch(int count) {};
 ```
 
-> 说明：
->
-> - count 为统计值。
+说明：
+
+- count 为统计值。
 
 `CountDownLatch` 的重要方法：
 
@@ -31,11 +43,11 @@ public boolean await(long timeout, TimeUnit unit) throws InterruptedException { 
 public void countDown() { };
 ```
 
-> 说明：
->
-> - `await()` - 调用 `await()` 方法的线程会被挂起，它会等待直到 count 值为 0 才继续执行。
-> - `await(long timeout, TimeUnit unit)` - 和 `await()` 类似，只不过等待一定的时间后 count 值还没变为 0 的话就会继续执行
-> - `countDown()` - 将统计值 count 减 1
+说明：
+
+- `await()` - 调用 `await()` 方法的线程会被挂起，它会等待直到 count 值为 0 才继续执行。
+- `await(long timeout, TimeUnit unit)` - 和 `await()` 类似，只不过等待一定的时间后 count 值还没变为 0 的话就会继续执行
+- `countDown()` - 将统计值 count 减 1
 
 示例：
 
@@ -85,13 +97,15 @@ public class CountDownLatchDemo {
 
 ## 二、CyclicBarrier
 
-> 字面意思是 **循环栅栏**。**`CyclicBarrier` 可以让一组线程等待至某个状态（遵循字面意思，不妨称这个状态为栅栏）之后再全部同时执行**。之所以叫循环栅栏是因为：当所有等待线程都被释放以后，`CyclicBarrier` 可以被重用。
+> 字面意思是 **循环栅栏**。**`CyclicBarrier` 可以让一组线程等待至某个状态（遵循字面意思，不妨称这个状态为栅栏）之后再全部同时执行**。之所以叫循环栅栏是因为：**当所有等待线程都被释放以后，`CyclicBarrier` 可以被重用**。
 >
 > `CyclicBarrier` 维护一个计数器 count。每次执行 `await` 方法之后，count 加 1，直到计数器的值和设置的值相等，等待的所有线程才会继续执行。
 
+`CyclicBarrier` 是基于 `ReentrantLock` 和 `Condition` 实现的。
+
 `CyclicBarrier` 应用场景：`CyclicBarrier` 在并行迭代算法中非常有用。
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/CyclicBarrier.png!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/CyclicBarrier.png)
 
 `CyclicBarrier` 提供了 2 个构造方法
 
@@ -172,7 +186,7 @@ public class CyclicBarrierDemo {
 
 ## 三、Semaphore
 
-> 字面意思为 **信号量**。`Semaphore` 用来控制同时访问某个特定资源的操作数量，或者同时执行某个指定操作的数量。
+> 字面意思为 **信号量**。`Semaphore` 用来控制某段代码块的并发数。
 >
 > `Semaphore` 管理着一组虚拟的许可（permit），permit 的初始数量可通过构造方法来指定。每次执行 `acquire` 方法可以获取一个 permit，如果没有就等待；而 `release` 方法可以释放一个 permit。
 
@@ -181,12 +195,14 @@ public class CyclicBarrierDemo {
 - `Semaphore` 可以用于实现资源池，如数据库连接池。
 - `Semaphore` 可以用于将任何一种容器变成有界阻塞容器。
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/Semaphore.png!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/Semaphore.png)
 
 `Semaphore` 提供了 2 个构造方法：
 
 ```java
+// 参数 permits 表示许可数目，即同时可以允许多少线程进行访问
 public Semaphore(int permits) {}
+// 参数 fair 表示是否是公平的，即等待时间越久的越先获取许可
 public Semaphore(int permits, boolean fair) {}
 ```
 

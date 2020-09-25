@@ -1,14 +1,33 @@
 # 深入理解 Java 异常
 
 > **📦 本文以及示例源码已归档在 [javacore](https://github.com/dunwu/javacore/)**
->
-> 🔁 本文中的示例代码已归档到：「[javacore](https://github.com/dunwu/javacore/tree/master/codes/javacore-basics/src/main/java/io/github/dunwu/javacore/exception)」
+
+<!-- TOC depthFrom:2 depthTo:3 -->
+
+- [异常框架](#异常框架)
+  - [Throwable](#throwable)
+  - [Error](#error)
+  - [Exception](#exception)
+  - [RuntimeException](#runtimeexception)
+- [自定义异常](#自定义异常)
+- [抛出异常](#抛出异常)
+- [捕获异常](#捕获异常)
+- [异常链](#异常链)
+- [异常注意事项](#异常注意事项)
+  - [finally 覆盖异常](#finally-覆盖异常)
+  - [覆盖抛出异常的方法](#覆盖抛出异常的方法)
+  - [异常和线程](#异常和线程)
+- [最佳实践](#最佳实践)
+- [小结](#小结)
+- [参考资料](#参考资料)
+
+<!-- /TOC -->
 
 ## 异常框架
 
 ### Throwable
 
-**`Throwable` 是 Java 语言中所有错误（`Error`）和异常（`Exception`）的超类。**
+**`Throwable` 是 Java 语言中所有错误（`Error`）和异常（`Exception`）的超类。**在 Java 中只有 Throwable 类型的实例才可以被抛出（throw）或者捕获（catch），它是异常处理机制的基本组成类型。
 
 `Throwable` 包含了其线程创建时线程执行堆栈的快照，它提供了 `printStackTrace()` 等接口用于获取堆栈跟踪数据等信息。
 
@@ -435,9 +454,9 @@ public class ExceptionOverrideDemo {
 
 ## 小结
 
-![img](http://dunwu.test.upcdn.net/snap/1553752019030.png!zp)
+![img](http://dunwu.test.upcdn.net/snap/1553752019030.png)
 
-![img](http://dunwu.test.upcdn.net/snap/1553752795010.png!zp)
+![img](http://dunwu.test.upcdn.net/snap/1553752795010.png)
 
 ## 参考资料
 

@@ -1,6 +1,27 @@
 # 深入理解 Java 序列化
 
 > **📦 本文以及示例源码已归档在 [javacore](https://github.com/dunwu/javacore/)**
+>
+> ***关键词：`Serializable`、`serialVersionUID`、`transient`、`Externalizable`、`writeObject`、`readObject`***
+
+![img](http://dunwu.test.upcdn.net/snap/20200630204142.png)
+
+<!-- TOC depthFrom:2 depthTo:3 -->
+
+- [一、序列化简介](#一序列化简介)
+- [二、序列化和反序列化](#二序列化和反序列化)
+- [三、Serializable 接口](#三serializable-接口)
+  - [serialVersionUID](#serialversionuid)
+  - [默认序列化机制](#默认序列化机制)
+  - [transient](#transient)
+- [四、Externalizable 接口](#四externalizable-接口)
+  - [Externalizable 接口的替代方法](#externalizable-接口的替代方法)
+  - [readResolve() 方法](#readresolve-方法)
+- [五、序列化问题](#五序列化问题)
+- [六、序列化技术选型](#六序列化技术选型)
+- [参考资料](#参考资料)
+
+<!-- /TOC -->
 
 ## 一、序列化简介
 
@@ -89,11 +110,9 @@ public class SerializeDemo01 {
 
 ## 三、Serializable 接口
 
-**被序列化的类必须属于 Enum、Array 和 Serializable 类型其中的任何一种**。
+**被序列化的类必须属于 Enum、Array 和 Serializable 类型其中的任何一种，否则将抛出 `NotSerializableException` 异常**。这是因为：在序列化操作过程中会对类型进行检查，如果不满足序列化类型要求，就会抛出异常。
 
-**如果不是 Enum、Array 的类，如果需要序列化，必须实现 `java.io.Serializable` 接口，否则将抛出 `NotSerializableException` 异常**。这是因为：在序列化操作过程中会对类型进行检查，如果不满足序列化类型要求，就会抛出异常。
-
-我们不妨做一个小尝试：将 SerializeDemo01 示例中 Person 类改为如下实现，然后看看运行结果。
+【示例】`NotSerializableException` 错误
 
 ```java
 public class UnSerializeDemo {
@@ -170,7 +189,7 @@ private static final long serialVersionUID = 2L;
 
 在现实应用中，有些时候不能使用默认序列化机制。比如，希望在序列化过程中忽略掉敏感数据，或者简化序列化过程。下面将介绍若干影响序列化的方法。
 
-**当某个字段被声明为 `transient` 后，默认序列化机制就会忽略该字段**。
+**当某个字段被声明为 `transient` 后，默认序列化机制就会忽略该字段的内容,该字段的内容在序列化后无法获得访问**。
 
 我们将 SerializeDemo01 示例中的内部类 Person 的 age 字段声明为 `transient`，如下所示：
 
@@ -413,39 +432,35 @@ public class SerializeDemo05 {
 
 Java 的序列化能保证对象状态的持久保存，但是遇到一些对象结构复杂的情况还是难以处理，这里归纳一下：
 
-- 当父类继承 `Serializable` 接口时，所有子类都可以被序列化。
-- 子类实现了 `Serializable` 接口，父类没有，则父类的属性不会被序列化（不报错，数据丢失），子类的属性仍可以正确序列化。
-- 如果序列化的属性是对象，则这个对象也必须实现 `Serializable` 接口，否则会报错。
-- 在反序列化时，如果对象的属性有修改或删减，则修改的部分属性会丢失，但不会报错。
-- 在反序列化时，如果 `serialVersionUID` 被修改，则反序列化时会失败。
+- 父类是 `Serializable`，所有子类都可以被序列化。
+- 子类是 `Serializable` ，父类不是，则子类可以正确序列化，但父类的属性不会被序列化（不报错，数据丢失）。
+- 如果序列化的属性是对象，则这个对象也必须是 `Serializable` ，否则报错。
+- 反序列化时，如果对象的属性有修改或删减，则修改的部分属性会丢失，但不会报错。
+- 反序列化时，如果 `serialVersionUID` 被修改，则反序列化会失败。
 
-## 六、序列化工具
+## 六、序列化技术选型
 
-Java 官方的序列化存在许多问题，因此，很多人更愿意使用优秀的第三方序列化工具来替代 Java 自身的序列化机制。
+Java 官方的序列化存在许多问题，因此，建议使用第三方序列化工具来替代。
 
 Java 官方的序列化主要体现在以下方面：
 
+- Java 官方的序列**无法跨语言**使用。
 - Java 官方的序列化**性能不高**，序列化后的数据相对于一些优秀的序列化的工具，还是要大不少，这大大影响存储和传输的效率。
 - Java 官方的序列化一定**需要实现 `Serializable` 接口**。
 - Java 官方的序列化**需要关注 `serialVersionUID`**。
-- Java 官方的序列**无法跨语言**使用。
 
 当然我们还有更加优秀的一些序列化和反序列化的工具，根据不同的使用场景可以自行选择！
 
-- [thrift](https://github.com/apache/thrift)、[protobuf](https://github.com/protocolbuffers/protobuf) - 适用于对性能敏感，对开发体验要求不高的内部系统。
-- [hessian](http://hessian.caucho.com/doc/hessian-overview.xtp) - 适用于对开发体验敏感，性能有要求的内外部系统。
-- [jackson](https://github.com/FasterXML/jackson)、[gson](https://github.com/google/gson)、[fastjson](https://github.com/alibaba/fastjson) - 适用于对序列化后的数据要求有良好的可读性（转为 json 、xml 形式）。
-
-## 要点总结
-
-![img](http://dunwu.test.upcdn.net/snap/1553227663192.png!zp)
+- [thrift](https://github.com/apache/thrift)、[protobuf](https://github.com/protocolbuffers/protobuf) - 适用于**对性能敏感，对开发体验要求不高**。
+- [hessian](http://hessian.caucho.com/doc/hessian-overview.xtp) - 适用于**对开发体验敏感，性能有要求**。
+- [jackson](https://github.com/FasterXML/jackson)、[gson](https://github.com/google/gson)、[fastjson](https://github.com/alibaba/fastjson) - 适用于对序列化后的数据要求有**良好的可读性**（转为 json 、xml 形式）。
 
 ## 参考资料
 
-- [Java编程思想](https://book.douban.com/subject/2130190/)
-- [Java核心技术（卷 1）](https://book.douban.com/subject/3146174/)
+- [Java 编程思想](https://book.douban.com/subject/2130190/)
+- [Java 核心技术（卷 1）](https://book.douban.com/subject/3146174/)
 - http://www.hollischuang.com/archives/1140
 - http://www.codenuclear.com/serialization-deserialization-java/
 - http://www.blogjava.net/jiangshachina/archive/2012/02/13/369898.html
-- [Java序列化的高级认识](https://www.ibm.com/developerworks/cn/java/j-lo-serial/index.html)
+- [Java 序列化的高级认识](https://www.ibm.com/developerworks/cn/java/j-lo-serial/index.html)
 - https://agapple.iteye.com/blog/859052

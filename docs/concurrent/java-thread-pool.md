@@ -2,6 +2,33 @@
 
 > **📦 本文以及示例源码已归档在 [javacore](https://github.com/dunwu/javacore/)**
 
+<!-- TOC depthFrom:2 depthTo:3 -->
+
+- [一、简介](#一简介)
+  - [什么是线程池](#什么是线程池)
+  - [为什么要用线程池](#为什么要用线程池)
+- [二、Executor 框架](#二executor-框架)
+  - [核心 API 概述](#核心-api-概述)
+  - [Executor](#executor)
+  - [ExecutorService](#executorservice)
+  - [ScheduledExecutorService](#scheduledexecutorservice)
+- [三、ThreadPoolExecutor](#三threadpoolexecutor)
+  - [重要字段](#重要字段)
+  - [构造方法](#构造方法)
+  - [execute 方法](#execute-方法)
+  - [其他重要方法](#其他重要方法)
+  - [使用示例](#使用示例)
+- [四、Executors](#四executors)
+  - [newSingleThreadExecutor](#newsinglethreadexecutor)
+  - [newFixedThreadPool](#newfixedthreadpool)
+  - [newCachedThreadPool](#newcachedthreadpool)
+  - [newScheduleThreadPool](#newschedulethreadpool)
+- [五、线程池优化](#五线程池优化)
+  - [计算线程数量](#计算线程数量)
+- [参考资料](#参考资料)
+
+<!-- /TOC -->
+
 ## 一、简介
 
 ### 什么是线程池
@@ -217,7 +244,7 @@ public ThreadPoolExecutor(int corePoolSize,
   - `AbortPolicy` - 丢弃任务并抛出异常。这也是默认策略。
   - `DiscardPolicy` - 丢弃任务，但不抛出异常。
   - `DiscardOldestPolicy` - 丢弃队列最前面的任务，然后重新尝试执行任务（重复此过程）。
-  - `CallerRunsPolicy` - 只用调用者所在的线程来运行任务。
+  - `CallerRunsPolicy` - 直接调用 `run` 方法并且阻塞执行。
   - 如果以上策略都不能满足需要，也可以通过实现 `RejectedExecutionHandler` 接口来定制处理策略。如记录日志或持久化不能处理的任务。
 
 ### execute 方法
@@ -360,7 +387,7 @@ public class FixedThreadPoolDemo {
 
 **创建一个可缓存的线程池**。
 
-- 如果线程池长度超过处理任务所需要的线程数，就会回收部分空闲的线程；
+- 如果线程池大小超过处理任务所需要的线程数，就会回收部分空闲的线程；
 - 如果长时间没有往线程池中提交任务，即如果工作线程空闲了指定的时间（默认为 1 分钟），则该工作线程将自动终止。终止后，如果你又提交了新的任务，则线程池重新创建一个工作线程。
 - 此线程池不会对线程池大小做限制，线程池大小完全依赖于操作系统（或者说 JVM）能够创建的最大线程大小。 因此，使用 `CachedThreadPool` 时，一定要注意控制任务的数量，否则，由于大量线程同时运行，很有会造成系统瘫痪。
 
@@ -425,6 +452,73 @@ public class ScheduledThreadPoolDemo {
 
 }
 ```
+
+## 五、线程池最佳实践
+
+### 计算线程数量
+
+一般多线程执行的任务类型可以分为 CPU 密集型和 I/O 密集型，根据不同的任务类型，我们计算线程数的方法也不一样。
+
+**CPU 密集型任务：**这种任务消耗的主要是 CPU 资源，可以将线程数设置为 N（CPU 核心数）+1，比 CPU 核心数多出来的一个线程是为了防止线程偶发的缺页中断，或者其它原因导致的任务暂停而带来的影响。一旦任务暂停，CPU 就会处于空闲状态，而在这种情况下多出来的一个线程就可以充分利用 CPU 的空闲时间。
+
+**I/O 密集型任务：**这种任务应用起来，系统会用大部分的时间来处理 I/O 交互，而线程在处理 I/O 的时间段内不会占用 CPU 来处理，这时就可以将 CPU 交出给其它线程使用。因此在 I/O 密集型任务的应用中，我们可以多配置一些线程，具体的计算方法是 2N。
+
+### 线程池使用注意点
+
+不建议使用 Executors 的最重要的原因是：Executors 提供的很多方法默认使用的都是无界的 LinkedBlockingQueue，高负载情境下，无界队列很容易导致 OOM，而 OOM 会导致所有请求都无法处理，这是致命问题。所以**强烈建议使用有界队列**。
+
+使用有界队列，当任务过多时，线程池会触发执行拒绝策略，线程池默认的拒绝策略会 throw RejectedExecutionException 这是个运行时异常，对于运行时异常编译器并不强制 catch 它，所以开发人员很容易忽略。因此**默认拒绝策略要慎重使用**。如果线程池处理的任务非常重要，建议自定义自己的拒绝策略；并且在实际工作中，自定义的拒绝策略往往和降级策略配合使用。
+
+## 六、线程池使用误区
+
+《阿里巴巴 Java 开发手册》中提到，禁止使用这些方法来创建线程池，而应该手动 `new ThreadPoolExecutor` 来创建线程池。制订这条规则是因为容易导致生产事故，最典型的就是 newFixedThreadPool 和 newCachedThreadPool，可能因为资源耗尽导致 OOM 问题。
+
+【示例】newFixedThreadPool OOM
+
+```java
+ThreadPoolExecutor threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
+printStats(threadPool);
+for (int i = 0; i < 100000000; i++) {
+	threadPool.execute(() -> {
+		String payload = IntStream.rangeClosed(1, 1000000)
+			.mapToObj(__ -> "a")
+			.collect(Collectors.joining("")) + UUID.randomUUID().toString();
+		try {
+			TimeUnit.HOURS.sleep(1);
+		} catch (InterruptedException e) {
+		}
+		log.info(payload);
+	});
+}
+
+threadPool.shutdown();
+threadPool.awaitTermination(1, TimeUnit.HOURS);
+```
+
+newFixedThreadPool 使用的工作队列是 `LinkedBlockingQueue` ，而默认构造方法的 `LinkedBlockingQueue` 是一个 `Integer.MAX_VALUE` 长度的队列，可以认为是无界的。如果任务较多并且执行较慢的话，队列可能会快速积压，撑爆内存导致 OOM。
+
+【示例】newCachedThreadPool OOM
+
+```java
+ThreadPoolExecutor threadPool = (ThreadPoolExecutor) Executors.newCachedThreadPool();
+printStats(threadPool);
+for (int i = 0; i < 100000000; i++) {
+	threadPool.execute(() -> {
+		String payload = UUID.randomUUID().toString();
+		try {
+			TimeUnit.HOURS.sleep(1);
+		} catch (InterruptedException e) {
+		}
+		log.info(payload);
+	});
+}
+threadPool.shutdown();
+threadPool.awaitTermination(1, TimeUnit.HOURS);
+```
+
+`newCachedThreadPool` 的最大线程数是 `Integer.MAX_VALUE`，可以认为是没有上限的，而其工作队列 `SynchronousQueue` 是一个没有存储空间的阻塞队列。这意味着，只要有请求到来，就必须找到一条工作线程来处理，如果当前没有空闲的线程就再创建一条新的。
+
+如果大量的任务进来后会创建大量的线程。我们知道线程是需要分配一定的内存空间作为线程栈的，比如 1MB，因此无限制创建线程必然会导致 OOM。
 
 ## 参考资料
 

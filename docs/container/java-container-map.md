@@ -287,7 +287,7 @@ final Node<K,V> getNode(int hash, Object key) {
 
 #### hash 方法的实现
 
-HashMap **计算桶下标（index）公式：`key.hashCode()) ^ (h >>> 16)`**。
+HashMap **计算桶下标（index）公式：`key.hashCode() ^ (h >>> 16)`**。
 
 下面针对这个公式来详细讲解。
 
@@ -711,15 +711,15 @@ WeakHashMap 的 key 是**弱键**，即是 WeakReference 类型的；ReferenceQu
 
 ### Map 简介
 
-![img](https://raw.githubusercontent.com/dunwu/images/master/snap/20200221162002.png)
+![img](http://dunwu.test.upcdn.net/snap/20200221162002.png)
 
 ### HashMap
 
-![img](https://raw.githubusercontent.com/dunwu/images/master/snap/20200221162111.png)
+![img](http://dunwu.test.upcdn.net/snap/20200221162111.png)
 
 ### 其他 Map
 
-![img](https://raw.githubusercontent.com/dunwu/images/master/snap/20200221161913.png)
+![img](http://dunwu.test.upcdn.net/snap/20200221161913.png)
 
 ## 参考资料
 

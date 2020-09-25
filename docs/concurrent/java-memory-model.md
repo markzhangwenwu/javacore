@@ -6,6 +6,27 @@
 >
 > JVM 中试图定义一种 JMM 来**屏蔽各种硬件和操作系统的内存访问差异，以实现让 Java 程序在各种平台下都能达到一致的内存访问效果**。
 
+<!-- TOC depthFrom:2 depthTo:3 -->
+
+- [一、物理内存模型](#一物理内存模型)
+  - [硬件处理效率](#硬件处理效率)
+  - [缓存一致性](#缓存一致性)
+  - [代码乱序执行优化](#代码乱序执行优化)
+- [二、Java 内存模型](#二java-内存模型)
+  - [主内存和工作内存](#主内存和工作内存)
+  - [JMM 内存操作的问题](#jmm-内存操作的问题)
+  - [内存间交互操作](#内存间交互操作)
+- [三、Java 内存模型规则](#三java-内存模型规则)
+  - [并发安全特性](#并发安全特性)
+  - [Happens-Before](#happens-before)
+  - [内存屏障](#内存屏障)
+  - [volatile 变量的特殊规则](#volatile-变量的特殊规则)
+  - [long 和 double 变量的特殊规则](#long-和-double-变量的特殊规则)
+  - [final 型量的特殊规则](#final-型量的特殊规则)
+- [参考资料](#参考资料)
+
+<!-- /TOC -->
+
 ## 一、物理内存模型
 
 物理机遇到的并发问题与虚拟机中的情况有不少相似之处，物理机对并发的处理方案对于虚拟机的实现也有相当大的参考意义。
@@ -25,26 +46,30 @@
 
 为了解决缓存一致性问题，**需要各个处理器访问缓存时都遵循一些协议，在读写时要根据协议来进行操作**。
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/cpu-memory-model.png!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/cpu-memory-model.png)
 
 ### 代码乱序执行优化
 
 **除了高速缓存以外，为了使得处理器内部的运算单元尽量被充分利用**，处理器可能会对输入代码进行乱序执行（Out-Of-Order Execution）优化。处理器会在计算之后将乱序执行的结果重组，**保证该结果与顺序执行的结果是一致的**，但不保证程序中各个语句计算的先后顺序与输入代码中的顺序一致。
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/java-memory-model_1.png!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/java-memory-model_1.png)
 
 乱序执行技术是处理器为提高运算速度而做出违背代码原有顺序的优化。
 
 - **单核**环境下，处理器保证做出的优化不会导致执行结果远离预期目标，但在多核环境下却并非如此。
 - **多核**环境下， 如果存在一个核的计算任务依赖另一个核的计算任务的中间结果，而且对相关数据读写没做任何防护措施，那么其顺序性并不能靠代码的先后顺序来保证。
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/java-memory-model_2.png!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/java-memory-model_2.png)
 
 ## 二、Java 内存模型
 
 **`内存模型`** 这个概念。我们可以理解为：**在特定的操作协议下，对特定的内存或高速缓存进行读写访问的过程抽象**。不同架构的物理计算机可以有不一样的内存模型，JVM 也有自己的内存模型。
 
 JVM 中试图定义一种 Java 内存模型（Java Memory Model, JMM）来**屏蔽各种硬件和操作系统的内存访问差异**，以实现让 Java 程序 **在各种平台下都能达到一致的内存访问效果**。
+
+在 [Java 并发简介](https://github.com/dunwu/javacore/blob/master/docs/concurrent/java-concurrent-introduction.md) 中已经介绍了，并发安全需要满足可见性、有序性、原子性。其中，导致可见性的原因是缓存，导致有序性的原因是编译优化。那解决可见性、有序性最直接的办法就是**禁用缓存和编译优化** 。但这么做，性能就堪忧了。
+
+合理的方案应该是**按需禁用缓存以及编译优化**。那么，如何做到呢？，Java 内存模型规范了 JVM 如何提供按需禁用缓存和编译优化的方法。具体来说，这些方法包括 **volatile**、**synchronized** 和 **final** 三个关键字，以及 **Happens-Before 规则**。
 
 ### 主内存和工作内存
 
@@ -54,11 +79,11 @@ JMM 规定了**所有的变量都存储在主内存（Main Memory）中**。
 
 每条线程还有自己的工作内存（Working Memory），**工作内存中保留了该线程使用到的变量的主内存的副本**。工作内存是 JMM 的一个抽象概念，并不真实存在，它涵盖了缓存，写缓冲区，寄存器以及其他的硬件和编译器优化。
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/java-memory-model_3.png!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/java-memory-model_3.png)
 
 线程对变量的所有操作都必须在工作内存中进行，而不能直接读写主内存中的变量。不同的线程间也无法直接访问对方工作内存中的变量，**线程间变量值的传递均需要通过主内存来完成**。
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/java-memory-model_4.png!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/java-memory-model_4.png)
 
 > 说明：
 >
@@ -100,11 +125,11 @@ JMM 还规定了上述 8 种基本操作，需要满足以下规则：
 - 如果一个变量事先没有被 lock 操作锁定，则不允许对它执行 unlock 操作，也不允许去 unlock 一个被其他线程锁定的变量。
 - 对一个变量执行 unlock 操作之前，必须先把此变量同步到主内存中（执行 store 和 write 操作）
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/java-memory-operator.png!zp)
+![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/java-memory-operator.png)
 
 ## 三、Java 内存模型规则
 
-### 内存交互操作的三大特性
+### 并发安全特性
 
 上文介绍了 Java 内存交互的 8 种基本操作，它们遵循 Java 内存三大特性：原子性、可见性、有序性。
 
@@ -142,14 +167,16 @@ Java 实现多线程可见性的方式有：
 - `volatile` 关键字会禁止指令重排序。
 - `synchronized` 关键字通过互斥保证同一时刻只允许一条线程操作。
 
-### 先行发生原则
+### Happens-Before
 
-> JMM 为程序中所有的操作定义了一个偏序关系，称之为 **`先行发生原则（Happens-Before）`**。
->
-> 先行发生原则非常重要，它是判断数据是否存在竞争、线程是否安全的主要依据，依靠这个原则，我们可以通过几条规则一揽子地解决并发环境下两个操作间是否可能存在冲突的所有问题。
+JMM 为程序中所有的操作定义了一个偏序关系，称之为 **`先行发生原则（Happens-Before）`**。
+
+**Happens-Before** 是指 **前面一个操作的结果对后续操作是可见的**。
+
+**Happens-Before** 非常重要，它是判断数据是否存在竞争、线程是否安全的主要依据，依靠这个原则，我们可以通过几条规则一揽子地解决并发环境下两个操作间是否可能存在冲突的所有问题。
 
 - **程序次序规则** - 一个线程内，按照代码顺序，书写在前面的操作先行发生于书写在后面的操作。
-- **管程锁定规则** - 一个 `unLock` 操作先行发生于后面对同一个锁的 `lock` 操作。
+- **锁定规则** - 一个 `unLock` 操作先行发生于后面对同一个锁的 `lock` 操作。
 - **volatile 变量规则** - 对一个 `volatile` 变量的写操作先行发生于后面对这个变量的读操作。
 - **线程启动规则** - `Thread` 对象的 `start()` 方法先行发生于此线程的每个一个动作。
 - **线程终止规则** - 线程中所有的操作都先行发生于线程的终止检测，我们可以通过 `Thread.join()` 方法结束、Thread.isAlive() 的返回值手段检测到线程已经终止执行。
@@ -289,3 +316,4 @@ JMM 要求 lock、unlock、read、load、assign、use、store、write 这 8 种�
 - [《Java 并发编程的艺术》](https://item.jd.com/11740734.html)
 - [《深入理解 Java 虚拟机》](https://item.jd.com/11252778.html)
 - [理解 Java 内存模型](https://juejin.im/post/5bf2977751882505d840321d)
+- [Java 并发编程实战](https://time.geekbang.org/column/intro/100023901)
