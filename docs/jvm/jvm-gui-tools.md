@@ -6,29 +6,29 @@
 
 <!-- TOC depthFrom:2 depthTo:3 -->
 
-- [jconsole](#jconsole)
-  - [开启 JMX](#开启-jmx)
-  - [连接 jconsole](#连接-jconsole)
-  - [jconsole 界面](#jconsole-界面)
-- [jvisualvm](#jvisualvm)
-  - [jvisualvm 概述页面](#jvisualvm-概述页面)
-  - [jvisualvm 监控页面](#jvisualvm-监控页面)
-  - [jvisualvm 线程页面](#jvisualvm-线程页面)
-  - [jvisualvm 抽样器页面](#jvisualvm-抽样器页面)
-- [MAT](#mat)
-  - [MAT 配置](#mat-配置)
-  - [MAT 分析](#mat-分析)
-- [JProfile](#jprofile)
-- [Arthas](#arthas)
-  - [Arthas 基础命令](#arthas-基础命令)
-  - [Arthas jvm 相关命令](#arthas-jvm-相关命令)
-  - [Arthas class/classloader 相关命令](#arthas-classclassloader-相关命令)
-  - [Arthas monitor/watch/trace 相关命令](#arthas-monitorwatchtrace-相关命令)
-- [参考资料](#参考资料)
+- [1. jconsole](#1-jconsole)
+  - [1.1. 开启 JMX](#11-开启-jmx)
+  - [1.2. 连接 jconsole](#12-连接-jconsole)
+  - [1.3. jconsole 界面](#13-jconsole-界面)
+- [2. jvisualvm](#2-jvisualvm)
+  - [2.1. jvisualvm 概述页面](#21-jvisualvm-概述页面)
+  - [2.2. jvisualvm 监控页面](#22-jvisualvm-监控页面)
+  - [2.3. jvisualvm 线程页面](#23-jvisualvm-线程页面)
+  - [2.4. jvisualvm 抽样器页面](#24-jvisualvm-抽样器页面)
+- [3. MAT](#3-mat)
+  - [3.1. MAT 配置](#31-mat-配置)
+  - [3.2. MAT 分析](#32-mat-分析)
+- [4. JProfile](#4-jprofile)
+- [5. Arthas](#5-arthas)
+  - [5.1. Arthas 基础命令](#51-arthas-基础命令)
+  - [5.2. Arthas jvm 相关命令](#52-arthas-jvm-相关命令)
+  - [5.3. Arthas class/classloader 相关命令](#53-arthas-classclassloader-相关命令)
+  - [5.4. Arthas monitor/watch/trace 相关命令](#54-arthas-monitorwatchtrace-相关命令)
+- [6. 参考资料](#6-参考资料)
 
 <!-- /TOC -->
 
-## jconsole
+## 1. jconsole
 
 > jconsole 是 JDK 自带的 GUI 工具。**jconsole(Java Monitoring and Management Console) 是一种基于 JMX 的可视化监视与管理工具**。
 >
@@ -36,7 +36,7 @@
 
 注意：使用 jconsole 的前提是 Java 应用开启 JMX。
 
-### 开启 JMX
+### 1.1. 开启 JMX
 
 Java 应用开启 JMX 后，可以使用 `jconsole` 或 `jvisualvm` 进行监控 Java 程序的基本信息和运行情况。
 
@@ -53,7 +53,7 @@ Java 应用开启 JMX 后，可以使用 `jconsole` 或 `jvisualvm` 进行监控
 - `-Djava.rmi.server.hostname` - 指定 Java 程序运行的服务器
 - `-Dcom.sun.management.jmxremote.port` - 指定 JMX 服务监听端口
 
-### 连接 jconsole
+### 1.2. 连接 jconsole
 
 如果是本地 Java 进程，jconsole 可以直接绑定连接。
 
@@ -61,7 +61,7 @@ Java 应用开启 JMX 后，可以使用 `jconsole` 或 `jvisualvm` 进行监控
 
 ![Connecting to a JMX Agent Using the JMX Service URL](https://docs.oracle.com/javase/8/docs/technotes/guides/management/figures/connectadv.gif)
 
-### jconsole 界面
+### 1.3. jconsole 界面
 
 进入 jconsole 应用后，可以看到以下 tab 页面。
 
@@ -72,43 +72,43 @@ Java 应用开启 JMX 后，可以使用 `jconsole` 或 `jvisualvm` 进行监控
 - `VM 摘要` - 显示有关 Java VM 的信息。
 - `MBean` - 显示有关 MBean 的信息。
 
-![](http://dunwu.test.upcdn.net/snap/20200730151422.png)
+![img](http://dunwu.test.upcdn.net/snap/20200730151422.png)
 
-## jvisualvm
+## 2. jvisualvm
 
 > jvisualvm 是 JDK 自带的 GUI 工具。**jvisualvm(All-In-One Java Troubleshooting Tool) 是多合一故障处理工具**。它支持运行监视、故障处理、性能分析等功能。
 
 个人觉得 jvisualvm 比 jconsole 好用。
 
-### jvisualvm 概述页面
+### 2.1. jvisualvm 概述页面
 
 jvisualvm 概述页面可以查看当前 Java 进程的基本信息，如：JDK 版本、Java 进程、JVM 参数等。
 
-![](http://dunwu.test.upcdn.net/snap/20200730150147.png)
+![img](http://dunwu.test.upcdn.net/snap/20200730150147.png)
 
-### jvisualvm 监控页面
+### 2.2. jvisualvm 监控页面
 
 在 jvisualvm 监控页面，可以看到 Java 进程的 CPU、内存、类加载、线程的实时变化。
 
-![](http://dunwu.test.upcdn.net/snap/20200730150254.png)
+![img](http://dunwu.test.upcdn.net/snap/20200730150254.png)
 
-### jvisualvm 线程页面
+### 2.3. jvisualvm 线程页面
 
 jvisualvm 线程页面展示了当前的线程状态。
 
-![](http://dunwu.test.upcdn.net/snap/20200730150416.png)
+![img](http://dunwu.test.upcdn.net/snap/20200730150416.png)
 
 jvisualvm 还可以生成线程 Dump 文件，帮助进一步分析线程栈信息。
 
-![](http://dunwu.test.upcdn.net/snap/20200730150830.png)
+![img](http://dunwu.test.upcdn.net/snap/20200730150830.png)
 
-### jvisualvm 抽样器页面
+### 2.4. jvisualvm 抽样器页面
 
 jvisualvm 可以对 CPU、内存进行抽样，帮助我们进行性能分析。
 
 ![image-20200730150648010](C:\Users\zp\AppData\Roaming\Typora\typora-user-images\image-20200730150648010.png)
 
-## MAT
+## 3. MAT
 
 [MAT](https://www.eclipse.org/mat/) 即 Eclipse Memory Analyzer Tool 的缩写。
 
@@ -116,7 +116,7 @@ MAT 本身也能够获取堆的二进制快照。该功能将借助 `jps` 列出
 
 MAT 可以独立安装（[官方下载地址](http://www.eclipse.org/mat/downloads.php)），也可以作为 Eclipse IDE 的插件安装。
 
-### MAT 配置
+### 3.1. MAT 配置
 
 MAT 解压后，安装目录下有个 `MemoryAnalyzer.ini` 文件。
 
@@ -134,7 +134,7 @@ An internal error occurred during: "Parsing heap dump from XXX"
 Failed to create the Java Virtual Machine
 ```
 
-### MAT 分析
+### 3.2. MAT 分析
 
 ![img](http://dunwu.test.upcdn.net/snap/20200308092746.png)
 
@@ -155,7 +155,7 @@ Failed to create the Java Virtual Machine
 MAT 同时打开两个堆转储文件，分别打开 Histogram，如下图。在下图中方框 1 按钮用于对比两个 Histogram，对比后在方框 2 处选择 Group By package，然后对比各对象的变化。不难发现 heap3.hprof 比 heap6.hprof 少了 64 个 eventInfo 对象，如果对代码比较熟悉的话想必这样一个结果是能够给程序员一定的启示的。而我也是根据这个启示差找到了最终内存泄露的位置。
 ![img](https://img-blog.csdn.net/20160223203226362)
 
-## JProfile
+## 4. JProfile
 
 [JProfiler](https://www.ej-technologies.com/products/jprofiler/overview.html) 是一款性能分析工具。
 
@@ -163,15 +163,15 @@ MAT 同时打开两个堆转储文件，分别打开 Histogram，如下图。在
 
 ![image-20200730152158398](C:\Users\zp\AppData\Roaming\Typora\typora-user-images\image-20200730152158398.png)
 
-## Arthas
+## 5. Arthas
 
 [Arthas](https://github.com/alibaba/arthas) 是 Alibaba 开源的 Java 诊断工具，深受开发者喜爱。在线排查问题，无需重启；动态跟踪 Java 代码；实时监控 JVM 状态。
 
 Arthas 支持 JDK 6+，支持 Linux/Mac/Windows，采用命令行交互模式，同时提供丰富的 `Tab` 自动补全功能，进一步方便进行问题的定位和诊断。
 
-![](http://dunwu.test.upcdn.net/snap/20200730145030.png)
+![img](http://dunwu.test.upcdn.net/snap/20200730145030.png)
 
-### Arthas 基础命令
+### 5.1. Arthas 基础命令
 
 - help——查看命令帮助信息
 - [cat](https://alibaba.github.io/arthas/cat.html)——打印文件内容，和 linux 里的 cat 命令类似
@@ -188,7 +188,7 @@ Arthas 支持 JDK 6+，支持 Linux/Mac/Windows，采用命令行交互模式，
 - stop——关闭 Arthas 服务端，所有 Arthas 客户端全部退出
 - [keymap](https://alibaba.github.io/arthas/keymap.html)——Arthas 快捷键列表及自定义快捷键
 
-### Arthas jvm 相关命令
+### 5.2. Arthas jvm 相关命令
 
 - [dashboard](https://alibaba.github.io/arthas/dashboard.html)——当前系统的实时数据面板
 - [thread](https://alibaba.github.io/arthas/thread.html)——查看当前 JVM 的线程堆栈信息
@@ -203,7 +203,7 @@ Arthas 支持 JDK 6+，支持 Linux/Mac/Windows，采用命令行交互模式，
 - [mbean](https://alibaba.github.io/arthas/mbean.html)——查看 Mbean 的信息
 - [heapdump](https://alibaba.github.io/arthas/heapdump.html)——dump java heap, 类似 jmap 命令的 heap dump 功能
 
-### Arthas class/classloader 相关命令
+### 5.3. Arthas class/classloader 相关命令
 
 - [sc](https://alibaba.github.io/arthas/sc.html)——查看 JVM 已加载的类信息
 - [sm](https://alibaba.github.io/arthas/sm.html)——查看已加载类的方法信息
@@ -213,7 +213,7 @@ Arthas 支持 JDK 6+，支持 Linux/Mac/Windows，采用命令行交互模式，
 - [dump](https://alibaba.github.io/arthas/dump.html)——dump 已加载类的 byte code 到特定目录
 - [classloader](https://alibaba.github.io/arthas/classloader.html)——查看 classloader 的继承树，urls，类加载信息，使用 classloader 去 getResource
 
-### Arthas monitor/watch/trace 相关命令
+### 5.4. Arthas monitor/watch/trace 相关命令
 
 > 请注意，这些命令，都通过字节码增强技术来实现的，会在指定类的方法中插入一些切面来实现数据统计和观测，因此在线上、预发使用时，请尽量明确需要观测的类、方法以及条件，诊断结束要执行 `stop` 或将增强过的类执行 `reset` 命令。
 
@@ -223,11 +223,12 @@ Arthas 支持 JDK 6+，支持 Linux/Mac/Windows，采用命令行交互模式，
 - [stack](https://alibaba.github.io/arthas/stack.html)——输出当前方法被调用的调用路径
 - [tt](https://alibaba.github.io/arthas/tt.html)——方法执行数据的时空隧道，记录下指定方法每次调用的入参和返回信息，并能对这些不同的时间下调用进行观测
 
-## 参考资料
+## 6. 参考资料
 
 - [《深入理解 Java 虚拟机》](https://item.jd.com/11252778.html)
 - [Java 性能调优实战](https://time.geekbang.org/column/intro/100028001)
 - [jconsole 官方文档](https://docs.oracle.com/javase/8/docs/technotes/guides/management/jconsole.html)
 - [jconsole 工具使用](https://www.cnblogs.com/kongzhongqijing/articles/3621441.html)
+- [jvisualvm 官方文档](https://docs.oracle.com/javase/8/docs/technotes/guides/visualvm/index.html)
 - [Java jvisualvm 简要说明](https://blog.csdn.net/a19881029/article/details/8432368)
 - [利用内存分析工具（Memory Analyzer Tool，MAT）分析 java 项目内存泄露](https://blog.csdn.net/wanghuiqi2008/article/details/50724676)
