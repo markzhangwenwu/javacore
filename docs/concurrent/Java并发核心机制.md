@@ -457,7 +457,7 @@ public static String concatString(String s1, String s2, String s3) {
 
 ### 2.4. synchronized 的误区
 
-> 示例摘自：[Java 业务开发常见错误 100 例](https://time.geekbang.org/column/intro/100047701)
+> 示例摘自：[《Java 业务开发常见错误 100 例》](https://time.geekbang.org/column/intro/100047701)
 
 #### synchronized 使用范围不当导致的错误
 
@@ -713,7 +713,7 @@ class Singleton {
 
 为什么说乐观锁需要 **硬件指令集的发展** 才能进行？因为需要操作和冲突检测这两个步骤具备原子性。而这点是由硬件来完成，如果再使用互斥同步来保证就失去意义了。硬件支持的原子性操作最典型的是：CAS。
 
-**_CAS（Compare and Swap），字面意思为比较并交换。CAS 有 3 个操作数，分别是：内存值 M，期望值 E，更新值 U。当且仅当内存值 M 和期望值 E 相等时，将内存值 M 修改为 U，否则什么都不做_**。
+**CAS（Compare and Swap），字面意思为比较并交换。CAS 有 3 个操作数，分别是：内存值 M，期望值 E，更新值 U。当且仅当内存值 M 和期望值 E 相等时，将内存值 M 修改为 U，否则什么都不做**。
 
 ### 4.2. CAS 的应用
 
@@ -1107,7 +1107,7 @@ try {
 
 ### 5.3. ThreadLocal 的误区
 
-> 示例摘自：[Java 业务开发常见错误 100 例](https://time.geekbang.org/column/intro/100047701)
+> 示例摘自：[《Java 业务开发常见错误 100 例》](https://time.geekbang.org/column/intro/100047701)
 
 ThreadLocal 适用于变量在线程间隔离，而在方法或类间共享的场景。
 
@@ -1192,7 +1192,7 @@ server.tomcat.max-threads=1
 - [《Java 并发编程实战》](https://item.jd.com/10922250.html)
 - [《Java 并发编程的艺术》](https://item.jd.com/11740734.html)
 - [《深入理解 Java 虚拟机》](https://item.jd.com/11252778.html)
-- [Java 业务开发常见错误 100 例](https://time.geekbang.org/column/intro/100047701)
+- [《Java 业务开发常见错误 100 例》](https://time.geekbang.org/column/intro/100047701)
 - [Java 并发编程：volatile 关键字解析](http://www.cnblogs.com/dolphin0520/p/3920373.html)
 - [Java 并发编程：synchronized](http://www.cnblogs.com/dolphin0520/p/3923737.html)
 - [深入理解 Java 并发之 synchronized 实现原理](https://blog.csdn.net/javazejian/article/details/72828483)

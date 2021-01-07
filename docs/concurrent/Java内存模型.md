@@ -1,29 +1,29 @@
 # Java 内存模型
 
+> **关键词**：`JMM`、`volatile`、`synchronized`、`final`、`Happens-Before`、`内存屏障`
+>
+> **摘要**：Java 内存模型（Java Memory Model），简称 **JMM**。Java 内存模型的目标是为了解决由可见性和有序性导致的并发安全问题。Java 内存模型通过 **屏蔽各种硬件和操作系统的内存访问差异，以实现让 Java 程序在各种平台下都能达到一致的内存访问效果**。
+>
 > **📦 本文以及示例源码已归档在 [javacore](https://github.com/dunwu/javacore/)**
->
-> Java 内存模型（Java Memory Model），简称 **JMM**。
->
-> JVM 中试图定义一种 JMM 来**屏蔽各种硬件和操作系统的内存访问差异，以实现让 Java 程序在各种平台下都能达到一致的内存访问效果**。
 
 <!-- TOC depthFrom:2 depthTo:3 -->
 
 - [1. 物理内存模型](#1-物理内存模型)
-  - [1.1. 硬件处理效率](#11-硬件处理效率)
-  - [1.2. 缓存一致性](#12-缓存一致性)
-  - [1.3. 代码乱序执行优化](#13-代码乱序执行优化)
+    - [1.1. 硬件处理效率](#11-硬件处理效率)
+    - [1.2. 缓存一致性](#12-缓存一致性)
+    - [1.3. 代码乱序执行优化](#13-代码乱序执行优化)
 - [2. Java 内存模型](#2-java-内存模型)
-  - [2.1. 主内存和工作内存](#21-主内存和工作内存)
-  - [2.2. JMM 内存操作的问题](#22-jmm-内存操作的问题)
-  - [2.3. 内存间交互操作](#23-内存间交互操作)
-- [3. Java 内存模型规则](#3-java-内存模型规则)
-  - [3.1. 并发安全特性](#31-并发安全特性)
-  - [3.2. Happens-Before](#32-happens-before)
-  - [3.3. 内存屏障](#33-内存屏障)
-  - [3.4. volatile 变量的特殊规则](#34-volatile-变量的特殊规则)
-  - [3.5. long 和 double 变量的特殊规则](#35-long-和-double-变量的特殊规则)
-  - [3.6. final 型量的特殊规则](#36-final-型量的特殊规则)
-- [4. 参考资料](#4-参考资料)
+    - [2.1. 主内存和工作内存](#21-主内存和工作内存)
+    - [2.2. JMM 内存操作的问题](#22-jmm-内存操作的问题)
+    - [2.3. 内存间交互操作](#23-内存间交互操作)
+    - [2.4. 并发安全特性](#24-并发安全特性)
+- [3. Happens-Before](#3-happens-before)
+- [4. 内存屏障](#4-内存屏障)
+- [5. volatile](#5-volatile)
+- [6. synchronized](#6-synchronized)
+    - [6.1. long 和 double 变量的特殊规则](#61-long-和-double-变量的特殊规则)
+    - [6.2. final 型量的特殊规则](#62-final-型量的特殊规则)
+- [7. 参考资料](#7-参考资料)
 
 <!-- /TOC -->
 
@@ -46,20 +46,20 @@
 
 为了解决缓存一致性问题，**需要各个处理器访问缓存时都遵循一些协议，在读写时要根据协议来进行操作**。
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/cpu-memory-model.png)
+![](https://raw.githubusercontent.com/dunwu/images/dev/snap/20210102230327.png)
 
 ### 1.3. 代码乱序执行优化
 
 **除了高速缓存以外，为了使得处理器内部的运算单元尽量被充分利用**，处理器可能会对输入代码进行乱序执行（Out-Of-Order Execution）优化。处理器会在计算之后将乱序执行的结果重组，**保证该结果与顺序执行的结果是一致的**，但不保证程序中各个语句计算的先后顺序与输入代码中的顺序一致。
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/java-memory-model_1.png)
+![](https://raw.githubusercontent.com/dunwu/images/dev/snap/20210102223609.png)
 
 乱序执行技术是处理器为提高运算速度而做出违背代码原有顺序的优化。
 
 - **单核**环境下，处理器保证做出的优化不会导致执行结果远离预期目标，但在多核环境下却并非如此。
 - **多核**环境下， 如果存在一个核的计算任务依赖另一个核的计算任务的中间结果，而且对相关数据读写没做任何防护措施，那么其顺序性并不能靠代码的先后顺序来保证。
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/java-memory-model_2.png)
+![](https://raw.githubusercontent.com/dunwu/images/dev/snap/20210102224144.png)
 
 ## 2. Java 内存模型
 
@@ -67,7 +67,7 @@
 
 JVM 中试图定义一种 Java 内存模型（Java Memory Model, JMM）来**屏蔽各种硬件和操作系统的内存访问差异**，以实现让 Java 程序 **在各种平台下都能达到一致的内存访问效果**。
 
-在 [Java 并发简介](https://github.com/dunwu/javacore/blob/master/docs/concurrent/java-concurrent-introduction.md) 中已经介绍了，并发安全需要满足可见性、有序性、原子性。其中，导致可见性的原因是缓存，导致有序性的原因是编译优化。那解决可见性、有序性最直接的办法就是**禁用缓存和编译优化** 。但这么做，性能就堪忧了。
+在 [Java 并发简介](https://github.com/dunwu/javacore/blob/master/docs/concurrent/Java并发简介.md) 中已经介绍了，并发安全需要满足可见性、有序性、原子性。其中，导致可见性的原因是缓存，导致有序性的原因是编译优化。那解决可见性、有序性最直接的办法就是**禁用缓存和编译优化** 。但这么做，性能就堪忧了。
 
 合理的方案应该是**按需禁用缓存以及编译优化**。那么，如何做到呢？，Java 内存模型规范了 JVM 如何提供按需禁用缓存和编译优化的方法。具体来说，这些方法包括 **volatile**、**synchronized** 和 **final** 三个关键字，以及 **Happens-Before 规则**。
 
@@ -79,11 +79,11 @@ JMM 规定了**所有的变量都存储在主内存（Main Memory）中**。
 
 每条线程还有自己的工作内存（Working Memory），**工作内存中保留了该线程使用到的变量的主内存的副本**。工作内存是 JMM 的一个抽象概念，并不真实存在，它涵盖了缓存，写缓冲区，寄存器以及其他的硬件和编译器优化。
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/java-memory-model_3.png)
+![](https://raw.githubusercontent.com/dunwu/images/dev/snap/20210102225839.png)
 
 线程对变量的所有操作都必须在工作内存中进行，而不能直接读写主内存中的变量。不同的线程间也无法直接访问对方工作内存中的变量，**线程间变量值的传递均需要通过主内存来完成**。
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/java-memory-model_4.png)
+![](https://raw.githubusercontent.com/dunwu/images/dev/snap/20210102225657.png)
 
 > 说明：
 >
@@ -125,11 +125,9 @@ JMM 还规定了上述 8 种基本操作，需要满足以下规则：
 - 如果一个变量事先没有被 lock 操作锁定，则不允许对它执行 unlock 操作，也不允许去 unlock 一个被其他线程锁定的变量。
 - 对一个变量执行 unlock 操作之前，必须先把此变量同步到主内存中（执行 store 和 write 操作）
 
-![img](http://dunwu.test.upcdn.net/cs/java/javacore/concurrent/java-memory-operator.png)
+![](https://raw.githubusercontent.com/dunwu/images/dev/snap/20210102230708.png)
 
-## 3. Java 内存模型规则
-
-### 3.1. 并发安全特性
+### 2.4. 并发安全特性
 
 上文介绍了 Java 内存交互的 8 种基本操作，它们遵循 Java 内存三大特性：原子性、可见性、有序性。
 
@@ -167,7 +165,7 @@ Java 实现多线程可见性的方式有：
 - `volatile` 关键字会禁止指令重排序。
 - `synchronized` 关键字通过互斥保证同一时刻只允许一条线程操作。
 
-### 3.2. Happens-Before
+## 3. Happens-Before
 
 JMM 为程序中所有的操作定义了一个偏序关系，称之为 **`先行发生原则（Happens-Before）`**。
 
@@ -184,7 +182,7 @@ JMM 为程序中所有的操作定义了一个偏序关系，称之为 **`先行
 - **对象终结规则** - 一个对象的初始化完成先行发生于它的 `finalize()` 方法的开始。
 - **传递性** - 如果操作 A 先行发生于 操作 B，而操作 B 又 先行发生于 操作 C，则可以得出操作 A 先行发生于 操作 C。
 
-### 3.3. 内存屏障
+## 4. 内存屏障
 
 Java 中如何保证底层操作的有序性和可见性？可以通过内存屏障（memory barrier）。
 
@@ -214,7 +212,7 @@ Load3;
 
 Java 中对内存屏障的使用在一般的代码中不太容易见到，常见的有 `volatile` 和 `synchronized` 关键字修饰的代码块(后面再展开介绍)，还可以通过 `Unsafe` 这个类来使用内存屏障。
 
-### 3.4. volatile 变量的特殊规则
+## 5. volatile
 
 `volatile` 是 JVM 提供的 **最轻量级的同步机制**。
 
@@ -300,20 +298,22 @@ doSomethingWithConfig();
 
 总结起来，就是“一次写入，到处读取”，某一线程负责更新变量，其他线程只读取变量(不更新变量)，并根据变量的新值执行相应逻辑。例如状态标志位更新，观察者模型变量值发布。
 
-### 3.5. long 和 double 变量的特殊规则
+## 6. synchronized
+
+### 6.1. long 和 double 变量的特殊规则
 
 JMM 要求 lock、unlock、read、load、assign、use、store、write 这 8 种操作都具有原子性，但是对于 64 位的数据类型（long 和 double），在模型中特别定义相对宽松的规定：允许虚拟机将没有被 `volatile` 修饰的 64 位数据的读写操作分为 2 次 32 位的操作来进行，即允许虚拟机可选择不保证 64 位数据类型的 load、store、read 和 write 这 4 个操作的原子性。由于这种非原子性，有可能导致其他线程读到同步未完成的“32 位的半个变量”的值。
 
 不过实际开发中，Java 内存模型强烈建议虚拟机把 64 位数据的读写实现为具有原子性，目前各种平台下的商用虚拟机都选择把 64 位数据的读写操作作为原子操作来对待，因此我们在编写代码时一般不需要把用到的 long 和 double 变量专门声明为 volatile。
 
-### 3.6. final 型量的特殊规则
+### 6.2. final 型量的特殊规则
 
 我们知道，final 成员变量必须在声明的时候初始化或者在构造器中初始化，否则就会报编译错误。 final 关键字的可见性是指：被 final 修饰的字段在声明时或者构造器中，一旦初始化完成，那么在其他线程无须同步就能正确看见 final 字段的值。这是因为一旦初始化完成，final 变量的值立刻回写到主内存。
 
-## 4. 参考资料
+## 7. 参考资料
 
 - [《Java 并发编程实战》](https://item.jd.com/10922250.html)
 - [《Java 并发编程的艺术》](https://item.jd.com/11740734.html)
 - [《深入理解 Java 虚拟机》](https://item.jd.com/11252778.html)
 - [理解 Java 内存模型](https://juejin.im/post/5bf2977751882505d840321d)
-- [Java 并发编程实战](https://time.geekbang.org/column/intro/100023901)
+- [《Java 并发编程实战》](https://time.geekbang.org/column/intro/100023901)
